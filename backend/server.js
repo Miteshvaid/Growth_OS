@@ -32,7 +32,7 @@ app.use("/api/tasks", require("./routes/taskRoutes"));
 app.use("/api/notes", require("./routes/noteRoutes"));
 app.use("/api/habits", require("./routes/habitRoutes"));
 app.use("/api/daily-logs", require("./routes/dailyLogRoutes"));
-app.use("/api/focus", require("./routes/focusCheckinRoutes"));
+app.use("/api/focus-checkin", require("./routes/focusCheckinRoutes"));
 app.use("/api/analytics", require("./routes/analyticsRoutes"));
 
 app.get("/", (req, res) => {
