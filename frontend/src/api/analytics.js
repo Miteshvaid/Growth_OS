@@ -1,13 +1,13 @@
 import axios from "axios";
 
-// const API_URL = "http://localhost:5000/api/analytics";
+const API = axios.create({
+  baseURL: "https://growth-os-h7hi.onrender.com/api",
+});
 
- baseURL: "https://growth-os-h7hi.onrender.com/api",
-
-export const getAnalytics = async () => {
+API.interceptors.request.use((req) => {
   const token = localStorage.getItem("token");
-  const response = await axios.get(API_URL, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  return response.data;
-};
+  if (token) req.headers.Authorization = `Bearer ${token}`;
+  return req;
+});
+
+export const getAnalytics = () => API.get("/analytics");
