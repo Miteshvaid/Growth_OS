@@ -20,12 +20,14 @@ function Login() {
     setError("");
     setLoading(true);
     try {
-      const data = await loginUser(formData);
-      localStorage.setItem("token", data.token);
-      localStorage.setItem(
-        "user",
-        JSON.stringify({ name: data.name, email: data.email }),
-      );
+      const res = await loginUser({ email, password });
+      console.log("Login response:", res); // Kya aa raha hai?
+
+      // Token kahan hai?
+      const token = res.token || res.accessToken || res.jwt;
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(res));
+
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || "Something went wrong");
