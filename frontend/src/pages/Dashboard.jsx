@@ -28,46 +28,83 @@ function Dashboard() {
     loadStats();
   }, []);
 
+  // const loadStats = async () => {
+  //   try {
+  //     const [notesRes, checkinsRes, summaryRes] = await Promise.all([
+  //       getNotes().catch(() => ({ data: [] })),
+  //       getTodayCheckins().catch(() => ({ data: [] })),
+  //       getDailySummary().catch(() => ({ data: { total: 0, avgFocus: 0 } })),
+  //     ]);
+
+  //     const notes = notesRes.data || [];
+  //     const checkins = checkinsRes.data || [];
+  //     const summary = summaryRes.data || {};
+
+  //     // Calculate streak
+  //     const uniqueDates = [...new Set(checkins.map((c) => c.date))].sort();
+  //     let streak = 0;
+  //     const today = new Date().toISOString().split("T")[0];
+  //     const yesterday = new Date(Date.now() - 86400000)
+  //       .toISOString()
+  //       .split("T")[0];
+
+  //     if (uniqueDates.includes(today)) {
+  //       streak = 1;
+  //       for (let i = uniqueDates.length - 1; i > 0; i--) {
+  //         const curr = new Date(uniqueDates[i]);
+  //         const prev = new Date(uniqueDates[i - 1]);
+  //         const diff = (curr - prev) / (1000 * 60 * 60 * 24);
+  //         if (diff === 1) streak++;
+  //         else break;
+  //       }
+  //     } else if (uniqueDates.includes(yesterday)) {
+  //       streak = 1;
+  //       for (let i = uniqueDates.length - 1; i > 0; i--) {
+  //         const curr = new Date(uniqueDates[i]);
+  //         const prev = new Date(uniqueDates[i - 1]);
+  //         const diff = (curr - prev) / (1000 * 60 * 60 * 24);
+  //         if (diff === 1) streak++;
+  //         else break;
+  //       }
+  //     }
+
+  //     setStats({
+  //       notes: notes.length,
+  //       streak: streak,
+  //       sessions: checkins.length,
+  //       avgFocus: summary.avgFocus || 0,
+  //     });
+  //   } catch (err) {
+  //     console.error("Failed to load stats", err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const loadStats = async () => {
     try {
-      const [notesRes, checkinsRes, summaryRes] = await Promise.all([
-        getNotes().catch(() => ({ data: [] })),
+      const [notesData, checkinsRes, summaryRes] = await Promise.all([
+        getNotes().catch((err) => {
+          console.error("Notes error:", err);
+          return [];
+        }),
         getTodayCheckins().catch(() => ({ data: [] })),
         getDailySummary().catch(() => ({ data: { total: 0, avgFocus: 0 } })),
       ]);
 
-      const notes = notesRes.data || [];
+      console.log("Notes data:", notesData); // Debug
+      console.log(
+        "Type:",
+        typeof notesData,
+        "Is Array:",
+        Array.isArray(notesData),
+      );
+
+      const notes = Array.isArray(notesData) ? notesData : [];
       const checkins = checkinsRes.data || [];
       const summary = summaryRes.data || {};
 
-      // Calculate streak
-      const uniqueDates = [...new Set(checkins.map((c) => c.date))].sort();
-      let streak = 0;
-      const today = new Date().toISOString().split("T")[0];
-      const yesterday = new Date(Date.now() - 86400000)
-        .toISOString()
-        .split("T")[0];
-
-      if (uniqueDates.includes(today)) {
-        streak = 1;
-        for (let i = uniqueDates.length - 1; i > 0; i--) {
-          const curr = new Date(uniqueDates[i]);
-          const prev = new Date(uniqueDates[i - 1]);
-          const diff = (curr - prev) / (1000 * 60 * 60 * 24);
-          if (diff === 1) streak++;
-          else break;
-        }
-      } else if (uniqueDates.includes(yesterday)) {
-        streak = 1;
-        for (let i = uniqueDates.length - 1; i > 0; i--) {
-          const curr = new Date(uniqueDates[i]);
-          const prev = new Date(uniqueDates[i - 1]);
-          const diff = (curr - prev) / (1000 * 60 * 60 * 24);
-          if (diff === 1) streak++;
-          else break;
-        }
-      }
-
+      // ... rest same
       setStats({
         notes: notes.length,
         streak: streak,
@@ -80,7 +117,6 @@ function Dashboard() {
       setLoading(false);
     }
   };
-
   const greeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
