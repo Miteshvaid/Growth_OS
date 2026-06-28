@@ -1,7 +1,8 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
+  // baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
+   baseURL: "https://growth-os-h7hi.onrender.com/api",
 });
 
 export const registerUser = async (userData) => {

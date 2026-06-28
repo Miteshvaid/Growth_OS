@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api/focus-checkin",
+  // baseURL: "http://localhost:5000/api/focus-checkin",
+
+   baseURL: "https://growth-os-h7hi.onrender.com/api",
 });
 
 API.interceptors.request.use((req) => {
