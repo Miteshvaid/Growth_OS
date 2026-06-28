@@ -47,17 +47,40 @@ function Notes() {
     fetchNotes();
   }, []);
 
+  // const fetchNotes = async () => {
+  //   try {
+  //     const data = await getNotes();
+  //     setNotes(data);
+  //   } catch (err) {
+  //     console.error(err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const fetchNotes = async () => {
     try {
-      const data = await getNotes();
+      const res = await getNotes();
+      console.log("Raw API response:", res);
+
+      // Handle all cases
+      let data = [];
+      if (Array.isArray(res)) {
+        data = res;
+      } else if (res && Array.isArray(res.data)) {
+        data = res.data;
+      } else if (res && typeof res === "object") {
+        data = [res]; // Single object wrap in array
+      }
+
+      console.log("Processed notes:", data);
       setNotes(data);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch error:", err);
+      setNotes([]);
     } finally {
       setLoading(false);
     }
   };
-
   const showToast = (message, type = "success") => {
     setToast({ message, type });
   };
