@@ -1,18 +1,7 @@
-import axios from "axios";
+import API from "./axiosConfig";
 
-const API = axios.create({
-  // baseURL: "http://localhost:5000/api/focus-checkin",
-
-   baseURL: "https://growth-os-h7hi.onrender.com/api",
-});
-
-API.interceptors.request.use((req) => {
-  const token = localStorage.getItem("token");
-  if (token) req.headers.Authorization = `Bearer ${token}`;
-  return req;
-});
-
-export const createCheckin = (data) => API.post("/", data);
-export const getTodayCheckins = () => API.get("/today");
-export const getHistory = (date) => API.get("/history", { params: { date } });
-export const getDailySummary = () => API.get("/summary");
+export const createCheckin = (data) => API.post("/focus-checkin", data);
+export const getTodayCheckins = () => API.get("/focus-checkin/today");
+export const getHistory = (date) =>
+  API.get("/focus-checkin/history", { params: { date } });
+export const getDailySummary = () => API.get("/focus-checkin/summary");

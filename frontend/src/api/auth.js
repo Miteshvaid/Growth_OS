@@ -1,16 +1,4 @@
-import axios from "axios";
+import API from "./axiosConfig";
 
-const API = axios.create({
-  // baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
-   baseURL: "https://growth-os-h7hi.onrender.com/api",
-});
-
-export const registerUser = async (userData) => {
-  const response = await API.post("/api/auth/register", userData);
-  return response.data;
-};
-
-export const loginUser = async (userData) => {
-  const response = await API.post("/api/auth/login", userData);
-  return response.data;
-};
+export const registerUser = (userData) => API.post("/auth/register", userData);
+export const loginUser = (userData) => API.post("/auth/login", userData);
