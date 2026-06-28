@@ -92,7 +92,7 @@ function Dashboard() {
         getDailySummary().catch(() => ({ data: { total: 0, avgFocus: 0 } })),
       ]);
 
-      console.log("Notes data:", notesData); // Debug
+      console.log("Notes data:", notesData);
       console.log(
         "Type:",
         typeof notesData,
@@ -104,7 +104,36 @@ function Dashboard() {
       const checkins = checkinsRes.data || [];
       const summary = summaryRes.data || {};
 
-      // ... rest same
+      // Calculate streak
+      const uniqueDates = [...new Set(checkins.map((c) => c.date))].sort();
+      let streak = 0;
+      const today = new Date().toISOString().split("T")[0];
+      const yesterday = new Date(Date.now() - 86400000)
+        .toISOString()
+        .split("T")[0];
+
+      if (uniqueDates.includes(today)) {
+        streak = 1;
+        for (let i = uniqueDates.length - 1; i > 0; i--) {
+          const curr = new Date(uniqueDates[i]);
+          const prev = new Date(uniqueDates[i - 1]);
+          const diff = (curr - prev) / (1000 * 60 * 60 * 24);
+          if (diff === 1) streak++;
+          else break;
+        }
+      } else if (uniqueDates.includes(yesterday)) {
+        streak = 1;
+        for (let i = uniqueDates.length - 1; i > 0; i--) {
+          const curr = new Date(uniqueDates[i]);
+          const prev = new Date(uniqueDates[i - 1]);
+          const diff = (curr - prev) / (1000 * 60 * 60 * 24);
+          if (diff === 1) streak++;
+          else break;
+        }
+      }
+
+      console.log("Final streak:", streak);
+
       setStats({
         notes: notes.length,
         streak: streak,
