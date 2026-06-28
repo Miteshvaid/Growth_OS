@@ -1,6 +1,6 @@
 import API from "./axiosConfig";
 
 export const getNotes = () => API.get("/notes");
-export const createNote = (noteData) => API.post("/notes", noteData);
-export const updateNote = (id, noteData) => API.put(`/notes/${id}`, noteData);
+export const createNote = (data) => API.post("/notes", data);
+export const updateNote = (id, data) => API.put(`/notes/${id}`, data);
 export const deleteNote = (id) => API.delete(`/notes/${id}`);

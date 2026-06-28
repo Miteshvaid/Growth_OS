@@ -40,7 +40,7 @@ function Dashboard() {
       const checkins = checkinsRes.data || [];
       const summary = summaryRes.data || {};
 
-      // Calculate streak from checkins
+      // Calculate streak
       const uniqueDates = [...new Set(checkins.map((c) => c.date))].sort();
       let streak = 0;
       const today = new Date().toISOString().split("T")[0];
@@ -88,7 +88,6 @@ function Dashboard() {
     return "Good evening";
   };
 
-  // --- LANDING VIEW ---
   if (!showApp) {
     return (
       <div className="min-h-screen bg-ink text-cream">
@@ -146,7 +145,6 @@ function Dashboard() {
     );
   }
 
-  // --- APP VIEW ---
   return (
     <div className="min-h-screen bg-ink text-cream">
       <Navbar />
@@ -168,7 +166,6 @@ function Dashboard() {
             What would you like to do?
           </h1>
 
-          {/* 3 Cards — Tasks hata diya */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link
               to="/focus-checkin"
@@ -216,7 +213,6 @@ function Dashboard() {
             </Link>
           </div>
 
-          {/* Real Stats — API se aayenge */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
             <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
               <p className="font-display text-2xl text-cream">

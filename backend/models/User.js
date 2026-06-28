@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
@@ -10,10 +10,10 @@ const userSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// Mongoose v8+ syntax — next() nahi chahiye
-userSchema.pre("save", async function () {
-  if (!this.isModified("password")) return;
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
 
 userSchema.methods.matchPassword = async function (enteredPassword) {

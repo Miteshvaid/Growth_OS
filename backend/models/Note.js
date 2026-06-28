@@ -7,23 +7,9 @@ const noteSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    content: {
-      type: String,
-      required: true,
-    },
-    tags: {
-      type: [String],
-      default: [],
-    },
-    editCount: {
-      type: Number,
-      default: 0,
-    },
+    title: { type: String, required: true },
+    content: { type: String, required: true },
+    tags: [{ type: String }],
   },
   { timestamps: true },
 );

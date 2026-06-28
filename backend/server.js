@@ -1,35 +1,56 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const dotenv = require("dotenv");
+const User = require("../models/User");
+const jwt = require("jsonwebtoken");
 
-dotenv.config();
+const generateToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
+};
 
-const app = express();
+exports.register = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
 
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "https://growth-os-ashen-nine.vercel.app",
-    ],
-    credentials: true,
-  }),
-);
-app.use(express.json());
+    const userExists = await User.findOne({ email });
+    if (userExists) {
+      return res.status(400).json({ message: "User already exists" });
+    }
 
-// Routes
-app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/notes", require("./routes/noteRoutes"));
-app.use("/api/habits", require("./routes/habitRoutes"));
-app.use("/api/focus-checkin", require("./routes/focusCheckinRoutes"));
-app.use("/api/tasks", require("./routes/taskRoutes"));
-app.use("/api/analytics", require("./routes/analyticsRoutes"));
+    const user = await User.create({ name, email, password });
+    const token = generateToken(user._id);
 
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB error:", err));
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      token: token,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const isMatch = await user.matchPassword(password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const token = generateToken(user._id);
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      token: token,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

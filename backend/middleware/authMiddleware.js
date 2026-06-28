@@ -14,15 +14,13 @@ const protect = async (req, res, next) => {
       req.user = await User.findById(decoded.id).select("-password");
       next();
     } catch (error) {
-      console.error("Auth middleware error:", error);
-      res.status(401).json({ error: "Not authorized, token failed" });
+      res.status(401).json({ message: "Not authorized, token failed" });
     }
   }
 
   if (!token) {
-    res.status(401).json({ error: "Not authorized, no token" });
+    res.status(401).json({ message: "Not authorized, no token" });
   }
 };
 
-// YEH LINE IMPORTANT HAI:
 module.exports = { protect };
