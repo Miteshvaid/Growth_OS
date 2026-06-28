@@ -1,7 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const protect = require("../middleware/authMiddleware");
-const { upsertDailyLog, getTodayLog, getAllLogs } = require("../controllers/dailyLogController");
+const { protect } = require("../middleware/authMiddleware");
+const {
+  upsertDailyLog,
+  getTodayLog,
+  getAllLogs,
+} = require("../controllers/dailyLogController");
 
 router.use(protect);
 
