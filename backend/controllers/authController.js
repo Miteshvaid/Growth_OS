@@ -8,10 +8,29 @@ const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "30d" });
 };
 
+// ✅ Password Validation Helper
+const validatePassword = (password) => {
+  if (password.length < 8) return "Password must be at least 8 characters";
+  if (!/[A-Z]/.test(password))
+    return "Need at least one uppercase letter (A-Z)";
+  if (!/[a-z]/.test(password))
+    return "Need at least one lowercase letter (a-z)";
+  if (!/[0-9]/.test(password)) return "Need at least one number (0-9)";
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password))
+    return "Need at least one special character (!@#$%^&*)";
+  return null;
+};
+
 // ✅ REGISTER
 const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+
+    // ✅ Password validation
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return res.status(400).json({ message: passwordError });
+    }
 
     console.log("Register called with:", { name, email, password });
 
@@ -117,5 +136,5 @@ const getProfile = async (req, res) => {
   }
 };
 
-// ✅ EXPORTS
+// ✅ EXPORTS - Sirf ek baar, sab functions ke baad
 module.exports = { register, login, getProfile };

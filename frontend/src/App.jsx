@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
+import { Toaster } from "sonner";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -11,6 +12,20 @@ function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
+        {/* ✅ TOASTER YAHAN ADD KARO */}
+        <Toaster
+          position="top-right"
+          richColors
+          toastOptions={{
+            style: {
+              background: "#1a1a2e",
+              color: "#e2e8f0",
+              border: "1px solid rgba(255,255,255,0.1)",
+              fontSize: "14px",
+            },
+          }}
+        />
+
         <Routes>
           <Route path="/" element={<Navigate to="/register" />} />
           <Route path="/register" element={<Register />} />
