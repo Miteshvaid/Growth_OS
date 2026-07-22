@@ -1,14 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const auth = require("../middleware/authMiddleware");
-let protect;
-if (typeof auth === "function") {
-  protect = auth;
-} else {
-  protect = auth.protect;
-}
-
+const { protect } = require("../middleware/authMiddleware");
 const controller = require("../controllers/taskController");
 
 router.post("/", protect, controller.createTask);

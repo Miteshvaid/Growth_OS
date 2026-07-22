@@ -6,7 +6,7 @@ exports.createHabit = async (req, res) => {
     if (!name)
       return res.status(400).json({ message: "Habit name zaroori hai" });
 
-    const habit = await Habit.create({ userId: req.userId, name });
+    const habit = await Habit.create({ userId: req.user.id, name });
     res.status(201).json(habit);
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
@@ -15,7 +15,7 @@ exports.createHabit = async (req, res) => {
 
 exports.getHabits = async (req, res) => {
   try {
-    const habits = await Habit.find({ userId: req.userId }).sort({
+    const habits = await Habit.find({ userId: req.user.id }).sort({
       createdAt: -1,
     });
     res.status(200).json(habits);
@@ -28,7 +28,7 @@ exports.deleteHabit = async (req, res) => {
   try {
     const habit = await Habit.findOneAndDelete({
       _id: req.params.id,
-      userId: req.userId,
+      userId: req.user.id,
     });
     if (!habit) return res.status(404).json({ message: "Habit nahi mila" });
     res.status(200).json({ message: "Habit delete ho gaya" });

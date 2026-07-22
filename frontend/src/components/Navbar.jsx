@@ -1,111 +1,8 @@
-// import { Link, useLocation, useNavigate } from "react-router-dom";
-// import { useTheme } from "../context/ThemeContext";
-
-// function Navbar() {
-//   const { theme, toggleTheme } = useTheme();
-//   const navigate = useNavigate();
-//   const location = useLocation();
-//   const user = JSON.parse(localStorage.getItem("user") || "null");
-
-//   const handleLogout = () => {
-//     localStorage.clear();
-//     navigate("/login");
-//   };
-
-//   const isActive = (path) => location.pathname === path;
-
-//   return (
-//     <nav className="sticky top-0 z-50 backdrop-blur-xl bg-ink-light/80 border-b border-white/10 shadow-sm">
-//       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-//         {/* Logo */}
-//         <Link to="/dashboard" className="flex items-center gap-3 group">
-//           <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center text-white font-bold shadow-lg group-hover:scale-105 transition">
-//             G
-//           </div>
-
-//           <div>
-//             <h1 className="font-display text-lg text-cream leading-none">
-//               Growth OS
-//             </h1>
-//             <p className="text-xs text-muted">Build Better Every Day</p>
-//           </div>
-//         </Link>
-
-//         {/* Navigation */}
-//         <div className="hidden md:flex items-center gap-2">
-//           <Link
-//             to="/notes"
-//             className={`px-4 py-2 rounded-xl transition-all ${
-//               isActive("/notes")
-//                 ? "bg-accent text-white shadow"
-//                 : "text-muted hover:bg-accent/10 hover:text-accent"
-//             }`}
-//           >
-//             🌿 Garden
-//           </Link>
-
-//           <Link
-//             to="/daily-log"
-//             className={`px-4 py-2 rounded-xl transition-all ${
-//               isActive("/daily-log")
-//                 ? "bg-accent text-white shadow"
-//                 : "text-muted hover:bg-accent/10 hover:text-accent"
-//             }`}
-//           >
-//             📅 Daily Log
-//           </Link>
-
-//           <Link
-//             to="/analytics"
-//             className={`px-4 py-2 rounded-xl transition-all ${
-//               isActive("/analytics")
-//                 ? "bg-accent text-white shadow"
-//                 : "text-muted hover:bg-accent/10 hover:text-accent"
-//             }`}
-//           >
-//             📊 Analytics
-//           </Link>
-//         </div>
-
-//         {/* Right Side */}
-//         <div className="flex items-center gap-3">
-//           {/* Theme Toggle */}
-//           <button
-//             onClick={toggleTheme}
-//             className="w-10 h-10 rounded-xl border border-white/10 bg-ink flex items-center justify-center hover:bg-accent hover:text-white transition"
-//           >
-//             {theme === "dark" ? "☀️" : "🌙"}
-//           </button>
-
-//           {/* User */}
-//           <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-accent/10">
-//             <div className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center font-semibold">
-//               {user?.name?.charAt(0).toUpperCase() || "U"}
-//             </div>
-
-//             <span className="text-sm text-cream">{user?.name}</span>
-//           </div>
-
-//           {/* Logout */}
-//           <button
-//             onClick={handleLogout}
-//             className="px-4 py-2 rounded-xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition"
-//           >
-//             Logout
-//           </button>
-//         </div>
-//       </div>
-//     </nav>
-//   );
-// }
-
-// export default Navbar;
-
-////////
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
+import { getProfile } from "../api/auth";
 
 function Navbar() {
   const { theme, toggleTheme } = useTheme();
@@ -120,9 +17,34 @@ function Navbar() {
   const [profileImage, setProfileImage] = useState(null);
   const dropdownRef = useRef(null);
 
+  const [profileStats, setProfileStats] = useState({
+    notes: 0,
+    streak: 0,
+    logs: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(false);
+
   const user = JSON.parse(localStorage.getItem("user") || "{}");
 
-  // Close dropdown on outside click
+  const fetchProfileStats = async () => {
+    setStatsLoading(true);
+    try {
+      const res = await getProfile();
+      if (res.data && res.data.stats) {
+        setProfileStats(res.data.stats);
+      }
+    } catch (err) {
+      console.error("Failed to fetch profile stats:", err);
+      setProfileStats({ notes: 0, streak: 0, logs: 0 });
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showProfileModal) fetchProfileStats();
+  }, [showProfileModal]);
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -137,6 +59,11 @@ function Navbar() {
     const handleScroll = () => setScrolled(window.scrollY > 10);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("profileImage");
+    if (saved) setProfileImage(saved);
   }, []);
 
   const handleLogout = () => {
@@ -156,12 +83,6 @@ function Navbar() {
     }
   };
 
-  // Load saved profile image
-  useEffect(() => {
-    const saved = localStorage.getItem("profileImage");
-    if (saved) setProfileImage(saved);
-  }, []);
-
   const links = [
     { name: "Dashboard", path: "/dashboard" },
     { name: "Garden", path: "/notes" },
@@ -177,6 +98,8 @@ function Navbar() {
     { name: "Slack", icon: "💬", status: "connect", color: "text-purple-400" },
     { name: "GitHub", icon: "🐙", status: "connected", color: "text-gray-400" },
   ];
+
+  // ... baaki JSX same
 
   return (
     <>
@@ -546,17 +469,24 @@ function Navbar() {
                 </p>
               </div>
 
+              {/* ✅ YEH LAGAO */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-ink border border-white/5 rounded-xl p-3 text-center">
-                  <p className="font-display text-xl text-cream">12</p>
+                  <p className="font-display text-xl text-cream">
+                    {statsLoading ? "..." : profileStats.notes}
+                  </p>
                   <p className="text-muted text-xs">Notes</p>
                 </div>
                 <div className="bg-ink border border-white/5 rounded-xl p-3 text-center">
-                  <p className="font-display text-xl text-cream">5</p>
+                  <p className="font-display text-xl text-cream">
+                    {statsLoading ? "..." : profileStats.streak}
+                  </p>
                   <p className="text-muted text-xs">Streak</p>
                 </div>
                 <div className="bg-ink border border-white/5 rounded-xl p-3 text-center">
-                  <p className="font-display text-xl text-cream">3</p>
+                  <p className="font-display text-xl text-cream">
+                    {statsLoading ? "..." : profileStats.logs}
+                  </p>
                   <p className="text-muted text-xs">Logs</p>
                 </div>
               </div>

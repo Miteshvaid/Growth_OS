@@ -1,10 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const { protect } = require("../middleware/authMiddleware");
-const { getAnalytics } = require("../controllers/analyticsController");
+const {
+  getAnalytics,
+  getWeeklySummary,
+} = require("../controllers/analyticsController");
 
-// ❌ HATAO: router.use(protect);
-// ✅ Direct route pe lagao:
 router.get("/", protect, getAnalytics);
+router.get("/weekly", protect, getWeeklySummary);
 
 module.exports = router;
