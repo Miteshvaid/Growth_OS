@@ -22,16 +22,16 @@ mongoose
 
 // Models
 require("./models/User");
-require("./models/Task");
+
 require("./models/Note");
-require("./models/Habit");
+
 require("./models/FocusCheckin");
 
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
-app.use("/api/tasks", require("./routes/taskRoutes"));
+
 app.use("/api/notes", require("./routes/noteRoutes"));
-app.use("/api/habits", require("./routes/habitRoutes"));
+
 app.use("/api/focus-checkin", require("./routes/focusCheckinRoutes"));
 app.use("/api/analytics", require("./routes/analyticsRoutes"));
 

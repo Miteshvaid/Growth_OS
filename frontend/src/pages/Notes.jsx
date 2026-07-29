@@ -360,13 +360,14 @@ function Notes() {
               <div className="text-4xl mb-3">🌱</div>
               <p className="text-muted mb-1">
                 {notes.length === 0
-                  ? "Koi note nahi hai abhi"
-                  : "Koi match nahi mila"}
+                  ? "No notes available yet."
+                  : "No matching notes found."}
               </p>
+
               <p className="text-muted/50 text-sm">
                 {notes.length === 0
-                  ? "Pehla seed plant karo"
-                  : "Try different search"}
+                  ? "Create your first note to get started."
+                  : "Try a different search term."}
               </p>
             </motion.div>
           ) : (

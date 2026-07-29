@@ -1,7 +1,6 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const Note = require("../models/Note");
-const Habit = require("../models/Habit");
 const FocusCheckin = require("../models/FocusCheckin");
 
 const generateToken = (id) => {
@@ -83,7 +82,30 @@ const login = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
+    // 👇 YAHI PASTE KARO
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
+    if (user.lastLoginDate) {
+      const lastLogin = new Date(user.lastLoginDate);
+      lastLogin.setHours(0, 0, 0, 0);
+
+      const diffDays = Math.floor((today - lastLogin) / (1000 * 60 * 60 * 24));
+
+      if (diffDays === 1) {
+        user.currentStreak += 1;
+      } else if (diffDays > 1) {
+        user.currentStreak = 1;
+      }
+    } else {
+      user.currentStreak = 1;
+    }
+
+    user.lastLoginDate = today;
+    await user.save();
+    console.log("===== STREAK DEBUG =====");
+    console.log("Current Streak:", user.currentStreak);
+    console.log("Last Login:", user.lastLoginDate);
     res.json({
       _id: user._id,
       name: user.name,
@@ -103,22 +125,13 @@ const getProfile = async (req, res) => {
 
     console.log("Profile API - UserId:", userId);
 
-    const [notesCount, habits, checkinsCount] = await Promise.all([
+    const [notesCount, checkinsCount] = await Promise.all([
       Note.countDocuments({ userId }),
-      Habit.find({ userId }),
       FocusCheckin.countDocuments({ userId }),
     ]);
 
     console.log("Profile API - Notes:", notesCount);
-    console.log("Profile API - Habits:", habits.length);
     console.log("Profile API - Checkins:", checkinsCount);
-
-    let currentStreak = 0;
-    habits.forEach((h) => {
-      if (h.currentStreak > currentStreak) {
-        currentStreak = h.currentStreak;
-      }
-    });
 
     res.json({
       _id: req.user._id,
@@ -126,7 +139,7 @@ const getProfile = async (req, res) => {
       email: req.user.email,
       stats: {
         notes: notesCount,
-        streak: currentStreak,
+        streak: req.user.currentStreak,
         logs: checkinsCount,
       },
     });
