@@ -254,21 +254,33 @@ export default function Analytics() {
         useCORS: true,
         backgroundColor: "#11121b",
         logging: false,
+        foreignObjectRendering: false,
 
         onclone: (clonedDoc) => {
-          clonedDoc.querySelectorAll("*").forEach((el) => {
-            const computed = clonedDoc.defaultView.getComputedStyle(el);
+          const clonedElement = clonedDoc.querySelector(
+            `[data-pdf-report="true"]`,
+          );
 
-            if (computed.color.includes("oklab")) {
+          if (!clonedElement) return;
+
+          clonedElement.querySelectorAll("*").forEach((el) => {
+            const style = clonedDoc.defaultView.getComputedStyle(el);
+
+            // Convert Tailwind v4 oklab colors to safe RGB/hex colors
+            if (style.color.includes("oklab")) {
               el.style.color = "#f4f3f8";
             }
 
-            if (computed.backgroundColor.includes("oklab")) {
+            if (style.backgroundColor.includes("oklab")) {
               el.style.backgroundColor = "#11121b";
             }
 
-            if (computed.borderColor.includes("oklab")) {
+            if (style.borderColor.includes("oklab")) {
               el.style.borderColor = "#333544";
+            }
+
+            if (style.boxShadow.includes("oklab")) {
+              el.style.boxShadow = "none";
             }
           });
         },
@@ -540,7 +552,11 @@ export default function Analytics() {
           </div>
 
           {/* Report Container (captured for PDF export) */}
-          <div ref={reportRef} className="space-y-8 rounded-2xl">
+          <div
+            ref={reportRef}
+            data-pdf-report="true"
+            className="space-y-8 rounded-2xl"
+          >
             {/* Stat Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard
