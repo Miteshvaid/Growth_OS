@@ -238,114 +238,33 @@ export default function Analytics() {
 
   // PDF Export
   const handleExportPDF = async () => {
-    if (!reportRef.current || !data) return;
+    if (!reportRef.current) return;
     setExporting("pdf");
     try {
       const element = reportRef.current;
-      // const canvas = await html2canvas(element, {
-      //   scale: 2,
-      //   useCORS: true,
-      //   backgroundColor: "#11121b",
-      //   logging: false,
-      // });
 
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#11121b",
         logging: false,
-        foreignObjectRendering: false,
-
-        onclone: (clonedDoc) => {
-          const clonedElement = clonedDoc.querySelector(
-            `[data-pdf-report="true"]`,
-          );
-
-          if (!clonedElement) return;
-
-          clonedElement.querySelectorAll("*").forEach((el) => {
-            const style = clonedDoc.defaultView.getComputedStyle(el);
-
-            // Convert Tailwind v4 oklab colors to safe RGB/hex colors
-            if (style.color.includes("oklab")) {
-              el.style.color = "#f4f3f8";
-            }
-
-            if (style.backgroundColor.includes("oklab")) {
-              el.style.backgroundColor = "#11121b";
-            }
-
-            if (style.borderColor.includes("oklab")) {
-              el.style.borderColor = "#333544";
-            }
-
-            if (style.boxShadow.includes("oklab")) {
-              el.style.boxShadow = "none";
-            }
-          });
-        },
       });
+
       const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      const margin = 12;
-      const contentWidth = pdfWidth - margin * 2;
-      const contentHeight = (canvas.height * contentWidth) / canvas.width;
-
-      // Branded Title Bar
-      pdf.setFillColor(17, 18, 27);
-      pdf.rect(0, 0, pdfWidth, pdfHeight, "F");
-
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(16);
-      pdf.setTextColor(244, 243, 248);
-      pdf.text("Growth OS — Analytics & Growth Report", margin, margin + 4);
-
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(9);
-      pdf.setTextColor(139, 136, 160);
-      const dateStr = new Date().toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "px",
+        format: [canvas.width, canvas.height],
       });
-      pdf.text(
-        `Generated on: ${dateStr} • Period: ${
-          dateRange === 0 ? "All Time" : `Last ${dateRange} Days`
-        }`,
-        margin,
-        margin + 10,
-      );
 
-      // Render chart screenshot
-      const topOffset = margin + 14;
-      pdf.addImage(
-        imgData,
-        "PNG",
-        margin,
-        topOffset,
-        contentWidth,
-        Math.min(contentHeight, pdfHeight - topOffset - margin),
-      );
-
-      // Footer
-      pdf.setFontSize(8);
-      pdf.setTextColor(100, 100, 120);
-      pdf.text(
-        "Growth OS • Personal Knowledge & Productivity System",
-        margin,
-        pdfHeight - 6,
-      );
-
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
       pdf.save(
-        `Growth_OS_Report_${new Date().toISOString().split("T")[0]}.pdf`,
+        `Growth_OS_Analytics_${new Date().toISOString().split("T")[0]}.pdf`,
       );
     } catch (err) {
       console.error("PDF Export error:", err);
-      alert("Failed to generate PDF report");
+      alert("Failed to generate PDF export");
     } finally {
       setExporting(null);
       setShowExportMenu(false);
@@ -583,7 +502,6 @@ export default function Analytics() {
                 label="Avg Focus"
                 value={summary?.avgFocus || 0}
                 suffix="/5"
-                decimals={1}
                 delay={0.15}
               />
             </div>
@@ -785,7 +703,7 @@ export default function Analytics() {
   );
 }
 
-function StatCard({ label, value, suffix = "", delay = 0, decimals = 0 }) {
+function StatCard({ label, value, suffix = "", delay = 0 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -795,7 +713,7 @@ function StatCard({ label, value, suffix = "", delay = 0, decimals = 0 }) {
       className="bg-ink-light border border-white/5 rounded-xl p-4 text-center transition-colors hover:border-accent/30"
     >
       <p className="font-display text-2xl text-cream">
-        <AnimatedNumber value={value} suffix={suffix} decimals={decimals} />
+        <AnimatedNumber value={value} suffix={suffix} />
       </p>
       <p className="text-muted text-xs mt-1">{label}</p>
     </motion.div>
