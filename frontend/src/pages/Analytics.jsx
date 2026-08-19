@@ -237,11 +237,85 @@ export default function Analytics() {
   };
 
   // PDF Export
+  //   const handleExportPDF = async () => {
+  //     if (!reportRef.current) return;
+  //     setExporting("pdf");
+  //     try {
+  //       const element = reportRef.current;
+
+  //       ///////
+  //       const pdfStyle = document.createElement("style");
+
+  //       pdfStyle.id = "pdf-export-style";
+
+  //       pdfStyle.innerHTML = `
+  //   #pdf-export-target,
+  //   #pdf-export-target * {
+  //     color: #f4f3f8 !important;
+  //     background-image: none !important;
+  //   }
+
+  //   #pdf-export-target {
+  //     background-color: #11121b !important;
+  //   }
+  // `;
+
+  //       document.head.appendChild(pdfStyle);
+  //       element.setAttribute("id", "pdf-export-target");
+  //       //////
+  //       const canvas = await html2canvas(element, {
+  //         scale: 2,
+  //         useCORS: true,
+  //         backgroundColor: "#11121b",
+  //         logging: false,
+  //       });
+
+  //       const imgData = canvas.toDataURL("image/png");
+
+  //       const pdf = new jsPDF({
+  //         orientation: "portrait",
+  //         unit: "px",
+  //         format: [canvas.width, canvas.height],
+  //       });
+
+  //       pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+  //       pdf.save(
+  //         `Growth_OS_Analytics_${new Date().toISOString().split("T")[0]}.pdf`,
+  //       );
+  //     } catch (err) {
+  //       console.error("PDF Export error:", err);
+  //       alert("Failed to generate PDF export");
+  //     } finally {
+  //       setExporting(null);
+  //       setShowExportMenu(false);
+  //     }
+  //   };
+
   const handleExportPDF = async () => {
     if (!reportRef.current) return;
     setExporting("pdf");
+
+    const element = reportRef.current;
+
     try {
-      const element = reportRef.current;
+      const pdfStyle = document.createElement("style");
+
+      pdfStyle.id = "pdf-export-style";
+
+      pdfStyle.innerHTML = `
+      #pdf-export-target,
+      #pdf-export-target * {
+        color: #f4f3f8 !important;
+        background-image: none !important;
+      }
+
+      #pdf-export-target {
+        background-color: #11121b !important;
+      }
+    `;
+
+      document.head.appendChild(pdfStyle);
+      element.setAttribute("id", "pdf-export-target");
 
       const canvas = await html2canvas(element, {
         scale: 2,
@@ -259,6 +333,7 @@ export default function Analytics() {
       });
 
       pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+
       pdf.save(
         `Growth_OS_Analytics_${new Date().toISOString().split("T")[0]}.pdf`,
       );
@@ -266,11 +341,14 @@ export default function Analytics() {
       console.error("PDF Export error:", err);
       alert("Failed to generate PDF export");
     } finally {
+      // Cleanup PDF-only changes
+      element.removeAttribute("id");
+      document.getElementById("pdf-export-style")?.remove();
+
       setExporting(null);
       setShowExportMenu(false);
     }
   };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-ink">
