@@ -298,53 +298,75 @@ export default function Analytics() {
     const element = reportRef.current;
 
     try {
+      // Temporarily inject print/pdf friendly standard colors & styles
       const pdfStyle = document.createElement("style");
-
       pdfStyle.id = "pdf-export-style";
-
       pdfStyle.innerHTML = `
-      #pdf-export-target,
-      #pdf-export-target * {
-        color: #f4f3f8 !important;
-        background-image: none !important;
-      }
-
-      #pdf-export-target {
-        background-color: #11121b !important;
-      }
-    `;
+        #pdf-export-target {
+          background-color: #11121b !important;
+          color: #f4f3f8 !important;
+          padding: 24px !important;
+          border-radius: 16px !important;
+          width: 900px !important;
+        }
+        #pdf-export-target * {
+          box-shadow: none !important;
+          text-shadow: none !important;
+        }
+      `;
 
       document.head.appendChild(pdfStyle);
       element.setAttribute("id", "pdf-export-target");
+
+      // Wait briefly for DOM style adjustments
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#11121b",
         logging: false,
+        windowWidth: 1024,
       });
 
       const imgData = canvas.toDataURL("image/png");
 
       const pdf = new jsPDF({
         orientation: "portrait",
-        unit: "px",
-        format: [canvas.width, canvas.height],
+        unit: "pt",
+        format: "a4",
       });
 
-      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pdfWidth - 40; // 20pt margin left and right
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 20;
+
+      // First page
+      pdf.addImage(imgData, "PNG", 20, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight - 40;
+
+      // Add pages if content exceeds A4 single page height
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight + 20;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 20, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight - 40;
+      }
 
       pdf.save(
-        `Growth_OS_Analytics_${new Date().toISOString().split("T")[0]}.pdf`,
+        `Growth_OS_Analytics_${new Date().toISOString().split("T")[0]}.pdf`
       );
     } catch (err) {
       console.error("PDF Export error:", err);
-      alert("Failed to generate PDF export");
+      alert("Failed to generate PDF export: " + (err.message || err));
     } finally {
-      // Cleanup PDF-only changes
       element.removeAttribute("id");
       document.getElementById("pdf-export-style")?.remove();
-
       setExporting(null);
       setShowExportMenu(false);
     }

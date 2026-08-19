@@ -100,52 +100,59 @@ function Dashboard() {
 
   if (!showApp) {
     return (
-      <div className="min-h-screen bg-ink text-cream">
+      <div className="min-h-screen bg-ink text-cream relative overflow-hidden">
+        <div className="bg-glow-purple -top-32 -left-32 opacity-40 animate-pulse" />
+        <div className="bg-glow-green -bottom-32 -right-32 opacity-30" />
+
         <Navbar />
-        <div className="max-w-4xl mx-auto px-6 py-20 md:py-32 text-center">
+        <div className="max-w-4xl mx-auto px-6 py-20 md:py-32 text-center relative z-10">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{ opacity: 0, y: 25, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="w-16 h-16 rounded-2xl bg-accent flex items-center justify-center text-white text-2xl font-bold mx-auto mb-8 shadow-lg shadow-accent/30">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-accent to-accent-light flex items-center justify-center text-white text-2xl font-bold mx-auto mb-8 shadow-xl shadow-accent/30 ring-1 ring-white/20">
               G
             </div>
 
-            <h1 className="font-display text-5xl md:text-6xl text-cream mb-4 leading-tight">
+            <h1 className="font-display text-5xl md:text-6xl text-cream mb-4 leading-tight tracking-tight">
               {greeting()},{" "}
-              <span className="text-accent">{user?.name || "Friend"}</span>
+              <span className="bg-gradient-to-r from-accent-light via-purple-300 to-sprout-light bg-clip-text text-transparent">
+                {user?.name || "Friend"}
+              </span>
             </h1>
 
-            <p className="text-muted text-lg md:text-xl max-w-lg mx-auto mb-10 leading-relaxed">
+            <p className="text-muted text-lg md:text-xl max-w-lg mx-auto mb-10 leading-relaxed font-light">
               Your personal space to grow. Track focus sessions, capture
               learnings, and watch your progress bloom.
             </p>
 
             <motion.button
+              whileHover={{ scale: 1.04, boxShadow: "0 20px 40px -15px rgba(124, 58, 237, 0.4)" }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setShowApp(true)}
-              className="bg-accent hover:bg-accent-light text-white font-medium text-lg px-10 py-4 rounded-2xl transition-all shadow-lg shadow-accent/25 hover:shadow-accent/40"
+              className="bg-accent hover:bg-accent-light text-white font-medium text-lg px-10 py-4 rounded-2xl transition-all shadow-lg shadow-accent/25 flex items-center gap-2 mx-auto"
             >
-              Get Started →
+              <span>Get Started</span>
+              <span className="text-xl">→</span>
             </motion.button>
 
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="flex items-center justify-center gap-8 mt-16 text-sm text-muted"
+              className="flex flex-wrap items-center justify-center gap-8 mt-16 text-sm text-muted"
             >
-              <div className="flex items-center gap-2">
-                <span className="text-emerald-400">●</span>
+              <div className="flex items-center gap-2 bg-white/[0.03] px-3.5 py-1.5 rounded-full border border-white/5">
+                <span className="text-emerald-400 text-xs">●</span>
                 <span>Track focus sessions</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-accent">●</span>
+              <div className="flex items-center gap-2 bg-white/[0.03] px-3.5 py-1.5 rounded-full border border-white/5">
+                <span className="text-accent text-xs">●</span>
                 <span>Build knowledge garden</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-amber-400">●</span>
+              <div className="flex items-center gap-2 bg-white/[0.03] px-3.5 py-1.5 rounded-full border border-white/5">
+                <span className="text-amber-400 text-xs">●</span>
                 <span>Visualize growth</span>
               </div>
             </motion.div>
@@ -156,20 +163,21 @@ function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-ink text-cream">
+    <div className="min-h-screen bg-ink text-cream relative overflow-hidden">
+      <div className="bg-glow-purple -top-40 right-0 opacity-30" />
       <Navbar />
 
-      <div className="max-w-5xl mx-auto px-6 py-10">
+      <div className="max-w-5xl mx-auto px-6 py-10 relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
           <button
             onClick={() => setShowApp(false)}
-            className="text-muted text-sm hover:text-cream transition-colors mb-6"
+            className="text-muted text-sm hover:text-cream transition-colors mb-6 flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5 hover:border-white/10"
           >
-            ← Back
+            <span>←</span> Back Overview
           </button>
 
           <h1 className="font-display text-3xl text-cream mb-8">
@@ -179,12 +187,12 @@ function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Link
               to="/focus-checkin"
-              className="group bg-ink-light border border-white/5 rounded-2xl p-6 hover:border-accent/30 transition-all hover:-translate-y-1"
+              className="group glass-panel rounded-2xl p-6 hover:border-accent/40 transition-all hover:-translate-y-1.5 hover:shadow-xl hover:shadow-accent/10"
             >
               <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
                 🎯
               </div>
-              <h3 className="font-display text-lg text-cream mb-2">
+              <h3 className="font-display text-lg text-cream mb-2 group-hover:text-accent transition-colors">
                 Focus Check-in
               </h3>
               <p className="text-muted text-sm leading-relaxed">
@@ -194,12 +202,12 @@ function Dashboard() {
 
             <Link
               to="/notes"
-              className="group bg-ink-light border border-white/5 rounded-2xl p-6 hover:border-accent/30 transition-all hover:-translate-y-1"
+              className="group glass-panel rounded-2xl p-6 hover:border-accent/40 transition-all hover:-translate-y-1.5 hover:shadow-xl hover:shadow-accent/10"
             >
               <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
                 🌱
               </div>
-              <h3 className="font-display text-lg text-cream mb-2">
+              <h3 className="font-display text-lg text-cream mb-2 group-hover:text-accent transition-colors">
                 Knowledge Garden
               </h3>
               <p className="text-muted text-sm leading-relaxed">
@@ -209,12 +217,12 @@ function Dashboard() {
 
             <Link
               to="/tasks"
-              className="group bg-ink-light border border-white/5 rounded-2xl p-6 hover:border-accent/30 transition-all hover:-translate-y-1"
+              className="group glass-panel rounded-2xl p-6 hover:border-accent/40 transition-all hover:-translate-y-1.5 hover:shadow-xl hover:shadow-accent/10"
             >
               <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
                 ✅
               </div>
-              <h3 className="font-display text-lg text-cream mb-2">
+              <h3 className="font-display text-lg text-cream mb-2 group-hover:text-accent transition-colors">
                 Tasks & Goals
               </h3>
               <p className="text-muted text-sm leading-relaxed">
@@ -224,12 +232,12 @@ function Dashboard() {
 
             <Link
               to="/analytics"
-              className="group bg-ink-light border border-white/5 rounded-2xl p-6 hover:border-accent/30 transition-all hover:-translate-y-1"
+              className="group glass-panel rounded-2xl p-6 hover:border-accent/40 transition-all hover:-translate-y-1.5 hover:shadow-xl hover:shadow-accent/10"
             >
               <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
                 📊
               </div>
-              <h3 className="font-display text-lg text-cream mb-2">
+              <h3 className="font-display text-lg text-cream mb-2 group-hover:text-accent transition-colors">
                 Analytics
               </h3>
               <p className="text-muted text-sm leading-relaxed">
@@ -248,20 +256,20 @@ function Dashboard() {
               </>
             ) : (
               <>
-                <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
-                  <p className="font-display text-2xl text-cream">{stats.notes}</p>
+                <div className="glass-panel rounded-xl p-4 text-center hover:border-accent/30 transition-colors">
+                  <p className="font-display text-2xl text-accent">{stats.notes}</p>
                   <p className="text-muted text-xs mt-1">Notes</p>
                 </div>
-                <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
-                  <p className="font-display text-2xl text-cream">{stats.streak}</p>
+                <div className="glass-panel rounded-xl p-4 text-center hover:border-orange-500/30 transition-colors">
+                  <p className="font-display text-2xl text-orange-400">🔥 {stats.streak}d</p>
                   <p className="text-muted text-xs mt-1">Focus Streak</p>
                 </div>
-                <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
-                  <p className="font-display text-2xl text-cream">{stats.sessions}</p>
+                <div className="glass-panel rounded-xl p-4 text-center hover:border-green-500/30 transition-colors">
+                  <p className="font-display text-2xl text-green-400">{stats.sessions}</p>
                   <p className="text-muted text-xs mt-1">Sessions Today</p>
                 </div>
-                <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
-                  <p className="font-display text-2xl text-cream">{stats.avgFocus}</p>
+                <div className="glass-panel rounded-xl p-4 text-center hover:border-purple-500/30 transition-colors">
+                  <p className="font-display text-2xl text-purple-400">{stats.avgFocus} / 5</p>
                   <p className="text-muted text-xs mt-1">Avg Focus</p>
                 </div>
               </>

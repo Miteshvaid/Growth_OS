@@ -1,44 +1,80 @@
-@import "tailwindcss";
-@theme {
-  --font-display: "Fraunces", serif;
-  --font-body: "Inter", sans-serif;
-
-  /* Primary */
-  --color-accent: #7c3aed;
-  --color-accent-light: #8b5cf6;
-
-  /* Secondary (Sprout) */
-  --color-sprout: #22c55e;
-  --color-sprout-light: #4ade80;
-
-  --color-amber: #f59e0b;
-
-  --color-ink: var(--bg-ink);
-  --color-ink-light: var(--bg-ink-light);
-  --color-cream: var(--text-cream);
-  --color-muted: var(--text-muted);
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --bg-ink: #faf8ff;
+  --bg-ink: #f8fafc;
   --bg-ink-light: #ffffff;
-  --text-cream: #1e1b2e;
-  --text-muted: #6b6880;
+  --text-cream: #0f172a;
+  --text-muted: #64748b;
 }
 
 .dark {
-  --bg-ink: #11121b;
-  --bg-ink-light: #1a1c29;
-  --text-cream: #f4f3f8;
-  --text-muted: #8b88a0;
+  --bg-ink: #0b0f17;
+  --bg-ink-light: #131b2e;
+  --text-cream: #f8fafc;
+  --text-muted: #94a3b8;
 }
 
 body {
   background-color: var(--bg-ink);
-  font-family: var(--font-body);
-  transition:
-    background-color 0.3s ease,
-    color 0.3s ease;
+  color: var(--text-cream);
+  font-family: "Inter", sans-serif;
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.45);
+}
+
+/* Glassmorphism & UI Utilities */
+.glass-panel {
+  background: rgba(19, 27, 46, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px -10px rgba(124, 58, 237, 0.2);
+  border-color: rgba(124, 58, 237, 0.3);
+}
+
+/* Smooth Glow Ambient Lights */
+.bg-glow-purple {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.bg-glow-green {
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.12) 0%, rgba(0, 0, 0, 0) 70%);
+  pointer-events: none;
+  border-radius: 50%;
 }
 
 /* Tiptap Rich Editor Styling */
@@ -82,7 +118,7 @@ body {
 }
 
 .ProseMirror blockquote {
-  border-left: 3px solid var(--color-accent);
+  border-left: 3px solid #7c3aed;
   padding-left: 0.75rem;
   margin: 0.75rem 0;
   color: var(--text-muted);

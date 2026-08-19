@@ -199,11 +199,9 @@ function Navbar() {
                     </div>
 
                     <div className="p-1.5">
-                      <button
-                        onClick={() => {
-                          setProfileOpen(false);
-                          setShowProfileModal(true);
-                        }}
+                      <Link
+                        to="/profile"
+                        onClick={() => setProfileOpen(false)}
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-cream/80 hover:text-cream hover:bg-white/5 transition-colors text-left"
                       >
                         <svg
@@ -220,7 +218,7 @@ function Navbar() {
                           />
                         </svg>
                         View Profile
-                      </button>
+                      </Link>
 
                       <button
                         onClick={() => {

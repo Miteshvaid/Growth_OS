@@ -109,24 +109,31 @@ const login = async (req, res) => {
   }
 };
 
+const Task = require("../models/Task");
+
 // ✅ GET PROFILE
 const getProfile = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    const [notesCount, checkinsCount] = await Promise.all([
+    const [notesCount, checkinsCount, totalTasksCount, completedTasksCount] = await Promise.all([
       Note.countDocuments({ userId }),
       FocusCheckin.countDocuments({ userId }),
+      Task.countDocuments({ userId }),
+      Task.countDocuments({ userId, status: "done" }),
     ]);
 
     res.json({
       _id: req.user._id,
       name: req.user.name,
       email: req.user.email,
+      createdAt: req.user.createdAt,
       stats: {
         notes: notesCount,
-        streak: req.user.currentStreak,
+        streak: req.user.currentStreak || 0,
         logs: checkinsCount,
+        totalTasks: totalTasksCount,
+        completedTasks: completedTasksCount,
       },
     });
   } catch (error) {
@@ -135,5 +142,66 @@ const getProfile = async (req, res) => {
   }
 };
 
+// ✅ UPDATE PROFILE
+const updateProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const { name, email } = req.body;
+    if (name) user.name = name;
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({ message: "Email is already taken" });
+      }
+      user.email = email;
+    }
+
+    await user.save();
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      message: "Profile updated successfully",
+    });
+  } catch (error) {
+    console.error("Update profile error:", error);
+    res.status(500).json({ message: error.message || "Failed to update profile" });
+  }
+};
+
+// ✅ CHANGE PASSWORD
+const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: "Please provide current and new password" });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      return res.status(400).json({ message: passwordError });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({ message: error.message || "Failed to change password" });
+  }
+};
+
 // ✅ EXPORTS
-module.exports = { register, login, getProfile };
+module.exports = { register, login, getProfile, updateProfile, changePassword };

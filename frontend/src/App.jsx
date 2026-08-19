@@ -8,6 +8,7 @@ import Notes from "./pages/Notes";
 import Analytics from "./pages/Analytics";
 import FocusCheckin from "./pages/FocusCheckin";
 import Tasks from "./pages/Tasks";
+import Profile from "./pages/Profile";
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/focus-checkin" element={<FocusCheckin />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/profile" element={<Profile />} />
 
           {/* Old Daily Log redirect to Focus Check-in */}
           <Route
