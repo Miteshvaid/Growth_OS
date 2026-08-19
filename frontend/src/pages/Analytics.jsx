@@ -221,7 +221,7 @@ export default function Analytics() {
       link.href = url;
       link.setAttribute(
         "download",
-        `Growth_OS_Analytics_${new Date().toISOString().split("T")[0]}.csv`
+        `Growth_OS_Analytics_${new Date().toISOString().split("T")[0]}.csv`,
       );
       document.body.appendChild(link);
       link.click();
@@ -242,11 +242,36 @@ export default function Analytics() {
     setExporting("pdf");
     try {
       const element = reportRef.current;
+      // const canvas = await html2canvas(element, {
+      //   scale: 2,
+      //   useCORS: true,
+      //   backgroundColor: "#11121b",
+      //   logging: false,
+      // });
+
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#11121b",
         logging: false,
+
+        onclone: (clonedDoc) => {
+          clonedDoc.querySelectorAll("*").forEach((el) => {
+            const style = clonedDoc.defaultView.getComputedStyle(el);
+
+            if (style.color.includes("oklab")) {
+              el.style.color = "#f4f3f8";
+            }
+
+            if (style.backgroundColor.includes("oklab")) {
+              el.style.backgroundColor = "#11121b";
+            }
+
+            if (style.borderColor.includes("oklab")) {
+              el.style.borderColor = "rgba(255,255,255,0.1)";
+            }
+          });
+        },
       });
 
       const imgData = canvas.toDataURL("image/png");
@@ -281,7 +306,7 @@ export default function Analytics() {
           dateRange === 0 ? "All Time" : `Last ${dateRange} Days`
         }`,
         margin,
-        margin + 10
+        margin + 10,
       );
 
       // Render chart screenshot
@@ -292,7 +317,7 @@ export default function Analytics() {
         margin,
         topOffset,
         contentWidth,
-        Math.min(contentHeight, pdfHeight - topOffset - margin)
+        Math.min(contentHeight, pdfHeight - topOffset - margin),
       );
 
       // Footer
@@ -301,11 +326,11 @@ export default function Analytics() {
       pdf.text(
         "Growth OS • Personal Knowledge & Productivity System",
         margin,
-        pdfHeight - 6
+        pdfHeight - 6,
       );
 
       pdf.save(
-        `Growth_OS_Report_${new Date().toISOString().split("T")[0]}.pdf`
+        `Growth_OS_Report_${new Date().toISOString().split("T")[0]}.pdf`,
       );
     } catch (err) {
       console.error("PDF Export error:", err);
@@ -355,7 +380,7 @@ export default function Analytics() {
 
   if (activities && Object.keys(activities).length > 0) {
     const topActivity = Object.entries(activities).sort(
-      (a, b) => b[1] - a[1]
+      (a, b) => b[1] - a[1],
     )[0];
     insights.push({
       title: "Top Activity",
@@ -367,7 +392,7 @@ export default function Analytics() {
 
   if (focus && focus.length > 0) {
     const bestDay = focus.reduce((max, d) =>
-      d.avgFocus > max.avgFocus ? d : max
+      d.avgFocus > max.avgFocus ? d : max,
     );
     insights.push({
       title: "Best Focus Day",
@@ -714,7 +739,9 @@ export default function Analytics() {
                       </span>
                     </div>
                     <div className="flex items-center justify-between bg-ink rounded-lg px-4 py-3">
-                      <span className="text-cream text-sm">Completion Rate</span>
+                      <span className="text-cream text-sm">
+                        Completion Rate
+                      </span>
                       <span className="text-purple-400 font-display text-lg">
                         <AnimatedNumber
                           value={summary.completionRate || 0}
