@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Notes from "./pages/Notes";
 import Analytics from "./pages/Analytics";
 import FocusCheckin from "./pages/FocusCheckin";
+import Tasks from "./pages/Tasks";
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/notes" element={<Notes />} />
+          <Route path="/tasks" element={<Tasks />} />
           <Route path="/focus-checkin" element={<FocusCheckin />} />
           <Route path="/analytics" element={<Analytics />} />
 

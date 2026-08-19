@@ -5,6 +5,16 @@ import Navbar from "../components/Navbar";
 import { getNotes } from "../api/notes";
 import { getTodayCheckins, getDailySummary } from "../api/focusCheckin";
 
+// Reusable skeleton pulse block
+function StatSkeleton() {
+  return (
+    <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center animate-pulse">
+      <div className="h-7 w-12 bg-white/10 rounded-lg mx-auto mb-2" />
+      <div className="h-3 w-16 bg-white/5 rounded mx-auto" />
+    </div>
+  );
+}
+
 function Dashboard() {
   const [user, setUser] = useState(null);
   const [showApp, setShowApp] = useState(false);
@@ -28,83 +38,19 @@ function Dashboard() {
     loadStats();
   }, []);
 
-  // const loadStats = async () => {
-  //   try {
-  //     const [notesRes, checkinsRes, summaryRes] = await Promise.all([
-  //       getNotes().catch(() => ({ data: [] })),
-  //       getTodayCheckins().catch(() => ({ data: [] })),
-  //       getDailySummary().catch(() => ({ data: { total: 0, avgFocus: 0 } })),
-  //     ]);
-
-  //     const notes = notesRes.data || [];
-  //     const checkins = checkinsRes.data || [];
-  //     const summary = summaryRes.data || {};
-
-  //     // Calculate streak
-  //     const uniqueDates = [...new Set(checkins.map((c) => c.date))].sort();
-  //     let streak = 0;
-  //     const today = new Date().toISOString().split("T")[0];
-  //     const yesterday = new Date(Date.now() - 86400000)
-  //       .toISOString()
-  //       .split("T")[0];
-
-  //     if (uniqueDates.includes(today)) {
-  //       streak = 1;
-  //       for (let i = uniqueDates.length - 1; i > 0; i--) {
-  //         const curr = new Date(uniqueDates[i]);
-  //         const prev = new Date(uniqueDates[i - 1]);
-  //         const diff = (curr - prev) / (1000 * 60 * 60 * 24);
-  //         if (diff === 1) streak++;
-  //         else break;
-  //       }
-  //     } else if (uniqueDates.includes(yesterday)) {
-  //       streak = 1;
-  //       for (let i = uniqueDates.length - 1; i > 0; i--) {
-  //         const curr = new Date(uniqueDates[i]);
-  //         const prev = new Date(uniqueDates[i - 1]);
-  //         const diff = (curr - prev) / (1000 * 60 * 60 * 24);
-  //         if (diff === 1) streak++;
-  //         else break;
-  //       }
-  //     }
-
-  //     setStats({
-  //       notes: notes.length,
-  //       streak: streak,
-  //       sessions: checkins.length,
-  //       avgFocus: summary.avgFocus || 0,
-  //     });
-  //   } catch (err) {
-  //     console.error("Failed to load stats", err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const loadStats = async () => {
     try {
       const [notesData, checkinsRes, summaryRes] = await Promise.all([
-        getNotes().catch((err) => {
-          console.error("Notes error:", err);
-          return [];
-        }),
+        getNotes().catch(() => []),
         getTodayCheckins().catch(() => ({ data: [] })),
         getDailySummary().catch(() => ({ data: { total: 0, avgFocus: 0 } })),
       ]);
-
-      console.log("Notes data:", notesData);
-      console.log(
-        "Type:",
-        typeof notesData,
-        "Is Array:",
-        Array.isArray(notesData),
-      );
 
       const notes = Array.isArray(notesData) ? notesData : [];
       const checkins = checkinsRes.data || [];
       const summary = summaryRes.data || {};
 
-      // Calculate streak
+      // Calculate streak from today's check-ins
       const uniqueDates = [...new Set(checkins.map((c) => c.date))].sort();
       let streak = 0;
       const today = new Date().toISOString().split("T")[0];
@@ -132,8 +78,6 @@ function Dashboard() {
         }
       }
 
-      console.log("Final streak:", streak);
-
       setStats({
         notes: notes.length,
         streak: streak,
@@ -146,6 +90,7 @@ function Dashboard() {
       setLoading(false);
     }
   };
+
   const greeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -231,7 +176,7 @@ function Dashboard() {
             What would you like to do?
           </h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Link
               to="/focus-checkin"
               className="group bg-ink-light border border-white/5 rounded-2xl p-6 hover:border-accent/30 transition-all hover:-translate-y-1"
@@ -263,6 +208,21 @@ function Dashboard() {
             </Link>
 
             <Link
+              to="/tasks"
+              className="group bg-ink-light border border-white/5 rounded-2xl p-6 hover:border-accent/30 transition-all hover:-translate-y-1"
+            >
+              <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
+                ✅
+              </div>
+              <h3 className="font-display text-lg text-cream mb-2">
+                Tasks & Goals
+              </h3>
+              <p className="text-muted text-sm leading-relaxed">
+                Manage tasks and track your goals.
+              </p>
+            </Link>
+
+            <Link
               to="/analytics"
               className="group bg-ink-light border border-white/5 rounded-2xl p-6 hover:border-accent/30 transition-all hover:-translate-y-1"
             >
@@ -279,30 +239,33 @@ function Dashboard() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-            <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
-              <p className="font-display text-2xl text-cream">
-                {loading ? "..." : stats.notes}
-              </p>
-              <p className="text-muted text-xs mt-1">Notes</p>
-            </div>
-            <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
-              <p className="font-display text-2xl text-cream">
-                {loading ? "..." : stats.streak}
-              </p>
-              <p className="text-muted text-xs mt-1">Focus Streak</p>
-            </div>
-            <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
-              <p className="font-display text-2xl text-cream">
-                {loading ? "..." : stats.sessions}
-              </p>
-              <p className="text-muted text-xs mt-1">Sessions Today</p>
-            </div>
-            <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
-              <p className="font-display text-2xl text-cream">
-                {loading ? "..." : stats.avgFocus}
-              </p>
-              <p className="text-muted text-xs mt-1">Avg Focus</p>
-            </div>
+            {loading ? (
+              <>
+                <StatSkeleton />
+                <StatSkeleton />
+                <StatSkeleton />
+                <StatSkeleton />
+              </>
+            ) : (
+              <>
+                <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
+                  <p className="font-display text-2xl text-cream">{stats.notes}</p>
+                  <p className="text-muted text-xs mt-1">Notes</p>
+                </div>
+                <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
+                  <p className="font-display text-2xl text-cream">{stats.streak}</p>
+                  <p className="text-muted text-xs mt-1">Focus Streak</p>
+                </div>
+                <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
+                  <p className="font-display text-2xl text-cream">{stats.sessions}</p>
+                  <p className="text-muted text-xs mt-1">Sessions Today</p>
+                </div>
+                <div className="bg-ink-light border border-white/5 rounded-xl p-4 text-center">
+                  <p className="font-display text-2xl text-cream">{stats.avgFocus}</p>
+                  <p className="text-muted text-xs mt-1">Avg Focus</p>
+                </div>
+              </>
+            )}
           </div>
         </motion.div>
       </div>

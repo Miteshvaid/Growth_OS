@@ -26,14 +26,15 @@ require("./models/User");
 require("./models/Note");
 
 require("./models/FocusCheckin");
+require("./models/Task");
 
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
-
 app.use("/api/notes", require("./routes/noteRoutes"));
-
+app.use("/api/tasks", require("./routes/taskRoutes"));
 app.use("/api/focus-checkin", require("./routes/focusCheckinRoutes"));
 app.use("/api/analytics", require("./routes/analyticsRoutes"));
+app.use("/api/ai", require("./routes/aiRoutes"));
 
 app.get("/", (req, res) => {
   res.json({

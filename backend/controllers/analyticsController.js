@@ -1,10 +1,9 @@
 const FocusCheckin = require("../models/FocusCheckin");
 const Note = require("../models/Note");
+const Task = require("../models/Task");
 
-// Helper: Date format YYYY-MM-DD
 const formatDate = (date) => date.toISOString().split("T")[0];
 
-// Helper: Date range
 const getDateRange = (days) => {
   const end = new Date();
   const start = new Date();
@@ -15,29 +14,28 @@ const getDateRange = (days) => {
 exports.getAnalytics = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { period = "30" } = req.query;
-    const days = parseInt(period);
+
+    // Period safely parse
+    let { period = "30" } = req.query;
+    let days = parseInt(period, 10);
+    if (isNaN(days) || days <= 0) days = 365;
+    if (days > 365) days = 365;
+
     const { start, end } = getDateRange(days);
 
-    // Saara data parallel mein fetch karo
-    const [checkins, notes] = await Promise.all([
+    const [checkins, notes, allTasks] = await Promise.all([
       FocusCheckin.find({
         userId,
-        date: {
-          $gte: formatDate(start),
-          $lte: formatDate(end),
-        },
+        date: { $gte: formatDate(start), $lte: formatDate(end) },
       }).sort({ date: 1 }),
-
       Note.find({
         userId,
         createdAt: { $gte: start, $lte: end },
       }),
+      Task.find({ userId }),
     ]);
 
-    // ==========================================
-    // 1. FOCUS TREND (date-wise avg focus)
-    // ==========================================
+    // 1. FOCUS TREND (date-wise avg focus + count)
     const focusMap = new Map();
     checkins.forEach((c) => {
       if (!focusMap.has(c.date)) {
@@ -53,21 +51,19 @@ exports.getAnalytics = async (req, res) => {
       focusTrend.push({
         date,
         avgFocus: parseFloat((val.total / val.count).toFixed(1)),
+        count: val.count,
       });
     });
+    focusTrend.sort((a, b) => a.date.localeCompare(b.date));
 
-    // ==========================================
     // 2. ACTIVITY BREAKDOWN
-    // ==========================================
     const activityCounts = {};
     checkins.forEach((c) => {
       activityCounts[c.activityType] =
         (activityCounts[c.activityType] || 0) + 1;
     });
 
-    // ==========================================
-    // 3. STREAK CALCULATION
-    // ==========================================
+    // 3. STREAK
     const uniqueDates = [...new Set(checkins.map((c) => c.date))].sort();
     let currentStreak = 0;
     let maxStreak = 0;
@@ -80,7 +76,6 @@ exports.getAnalytics = async (req, res) => {
         const prev = new Date(uniqueDates[i - 1]);
         const curr = new Date(uniqueDates[i]);
         const diffDays = (curr - prev) / (1000 * 60 * 60 * 24);
-
         if (diffDays === 1) {
           tempStreak += 1;
         } else {
@@ -91,7 +86,6 @@ exports.getAnalytics = async (req, res) => {
     }
     maxStreak = Math.max(maxStreak, tempStreak);
 
-    // Current streak check
     const today = formatDate(new Date());
     const yesterday = formatDate(new Date(Date.now() - 86400000));
     if (uniqueDates.includes(today)) {
@@ -102,9 +96,36 @@ exports.getAnalytics = async (req, res) => {
       currentStreak = 0;
     }
 
-    // ==========================================
-    // 4. SUMMARY
-    // ==========================================
+    // 4. TASK METRICS & TREND
+    const totalTasks = allTasks.length;
+    const completedTasks = allTasks.filter((t) => t.status === "done").length;
+    const completionRate =
+      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    const taskMap = new Map();
+    allTasks.forEach((t) => {
+      const taskDate = formatDate(new Date(t.createdAt));
+      if (!taskMap.has(taskDate)) {
+        taskMap.set(taskDate, { total: 0, completed: 0 });
+      }
+      const item = taskMap.get(taskDate);
+      item.total += 1;
+      if (t.status === "done") {
+        item.completed += 1;
+      }
+    });
+
+    const taskTrend = [];
+    taskMap.forEach((val, date) => {
+      taskTrend.push({
+        date,
+        total: val.total,
+        completed: val.completed,
+      });
+    });
+    taskTrend.sort((a, b) => a.date.localeCompare(b.date));
+
+    // 5. SUMMARY
     const totalCheckins = checkins.length;
     const avgFocus =
       checkins.length > 0
@@ -112,35 +133,25 @@ exports.getAnalytics = async (req, res) => {
             (
               checkins.reduce((sum, c) => sum + c.focusRating, 0) /
               checkins.length
-            ).toFixed(1),
+            ).toFixed(1)
           )
         : 0;
 
-    const totalNotes = notes.length;
-
-    // ==========================================
-    // RESPONSE
-    // ==========================================
     res.json({
       success: true,
       period: `${days} days`,
       summary: {
         totalCheckins,
-        totalTasks: 0,
-        completedTasks: 0,
-        completionRate: 0,
-        totalNotes,
+        totalTasks,
+        completedTasks,
+        completionRate,
+        totalNotes: notes.length,
         currentStreak,
         maxStreak,
         avgFocus,
       },
-      trends: {
-        focus: focusTrend,
-        tasks: [],
-      },
-      breakdown: {
-        activities: activityCounts,
-      },
+      trends: { focus: focusTrend, tasks: taskTrend },
+      breakdown: { activities: activityCounts },
     });
   } catch (error) {
     console.error("Analytics Error:", error);
@@ -157,11 +168,18 @@ exports.getWeeklySummary = async (req, res) => {
     const userId = req.user.id;
     const today = formatDate(new Date());
     const weekAgo = formatDate(new Date(Date.now() - 7 * 86400000));
+    const weekAgoDate = new Date(Date.now() - 7 * 86400000);
 
-    const checkins = await FocusCheckin.find({
-      userId,
-      date: { $gte: weekAgo, $lte: today },
-    });
+    const [checkins, weeklyTasks] = await Promise.all([
+      FocusCheckin.find({
+        userId,
+        date: { $gte: weekAgo, $lte: today },
+      }),
+      Task.find({
+        userId,
+        createdAt: { $gte: weekAgoDate },
+      }),
+    ]);
 
     const avgFocus =
       checkins.length > 0
@@ -171,12 +189,14 @@ exports.getWeeklySummary = async (req, res) => {
           ).toFixed(1)
         : 0;
 
+    const tasksCompleted = weeklyTasks.filter((t) => t.status === "done").length;
+
     res.json({
       success: true,
       week: {
         checkins: checkins.length,
-        tasksCompleted: 0,
-        totalTasks: 0,
+        tasksCompleted,
+        totalTasks: weeklyTasks.length,
         avgFocusRating: parseFloat(avgFocus),
       },
     });

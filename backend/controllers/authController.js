@@ -31,8 +31,6 @@ const register = async (req, res) => {
       return res.status(400).json({ message: passwordError });
     }
 
-    console.log("Register called with:", { name, email, password });
-
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: "User already exists" });
@@ -50,7 +48,7 @@ const register = async (req, res) => {
       token: token,
     });
   } catch (error) {
-    console.log("Register error:", error);
+    console.error("Register error:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -58,8 +56,6 @@ const register = async (req, res) => {
 // ✅ LOGIN
 const login = async (req, res) => {
   try {
-    console.log("Login called with:", req.body);
-
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -69,20 +65,17 @@ const login = async (req, res) => {
     }
 
     const user = await User.findOne({ email });
-    console.log("User found:", user ? user._id : "No user");
 
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    console.log("Checking password...");
     const isMatch = await user.matchPassword(password);
-    console.log("Password match:", isMatch);
 
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
-    // 👇 YAHI PASTE KARO
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -103,9 +96,7 @@ const login = async (req, res) => {
 
     user.lastLoginDate = today;
     await user.save();
-    console.log("===== STREAK DEBUG =====");
-    console.log("Current Streak:", user.currentStreak);
-    console.log("Last Login:", user.lastLoginDate);
+
     res.json({
       _id: user._id,
       name: user.name,
@@ -123,15 +114,10 @@ const getProfile = async (req, res) => {
   try {
     const userId = req.user._id;
 
-    console.log("Profile API - UserId:", userId);
-
     const [notesCount, checkinsCount] = await Promise.all([
       Note.countDocuments({ userId }),
       FocusCheckin.countDocuments({ userId }),
     ]);
-
-    console.log("Profile API - Notes:", notesCount);
-    console.log("Profile API - Checkins:", checkinsCount);
 
     res.json({
       _id: req.user._id,
@@ -149,5 +135,5 @@ const getProfile = async (req, res) => {
   }
 };
 
-// ✅ EXPORTS - Sirf ek baar, sab functions ke baad
+// ✅ EXPORTS
 module.exports = { register, login, getProfile };

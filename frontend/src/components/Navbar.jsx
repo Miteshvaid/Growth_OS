@@ -13,7 +13,6 @@ function Navbar() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showAppsModal, setShowAppsModal] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const dropdownRef = useRef(null);
 
@@ -85,19 +84,13 @@ function Navbar() {
 
   const links = [
     { name: "Dashboard", path: "/dashboard" },
+    { name: "Tasks", path: "/tasks" },
     { name: "Garden", path: "/notes" },
     { name: "Analytics", path: "/analytics" },
     { name: "Focus", path: "/focus-checkin" },
   ];
 
   const isActive = (path) => location.pathname === path;
-
-  const connectedApps = [
-    { name: "Google", icon: "🔍", status: "connect", color: "text-blue-400" },
-    { name: "Notion", icon: "📝", status: "connect", color: "text-white" },
-    { name: "Slack", icon: "💬", status: "connect", color: "text-purple-400" },
-    { name: "GitHub", icon: "🐙", status: "connected", color: "text-gray-400" },
-  ];
 
   // ... baaki JSX same
 
@@ -258,11 +251,9 @@ function Navbar() {
                         Settings
                       </button>
 
-                      <button
-                        onClick={() => {
-                          setProfileOpen(false);
-                          setShowAppsModal(true);
-                        }}
+                      <Link
+                        to="/tasks"
+                        onClick={() => setProfileOpen(false)}
                         className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-cream/80 hover:text-cream hover:bg-white/5 transition-colors text-left"
                       >
                         <svg
@@ -275,11 +266,11 @@ function Navbar() {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
                           />
                         </svg>
-                        Connected Apps
-                      </button>
+                        Tasks & Goals
+                      </Link>
                     </div>
 
                     <div className="p-1.5 border-t border-white/5">
@@ -586,85 +577,6 @@ function Navbar() {
                     Manage
                   </button>
                 </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Connected Apps Modal */}
-      <AnimatePresence>
-        {showAppsModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center px-4 z-50"
-            onClick={() => setShowAppsModal(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-ink-light border border-white/10 rounded-2xl p-6 w-full max-w-md"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="font-display text-xl text-cream">
-                  Connected Apps
-                </h2>
-                <button
-                  onClick={() => setShowAppsModal(false)}
-                  className="text-muted hover:text-cream p-1 rounded-lg hover:bg-white/5"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {connectedApps.map((app) => (
-                  <div
-                    key={app.name}
-                    className="flex items-center justify-between p-3 bg-ink rounded-xl border border-white/5"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{app.icon}</span>
-                      <div>
-                        <p className="text-cream text-sm font-medium">
-                          {app.name}
-                        </p>
-                        <p
-                          className={`text-xs ${app.status === "connected" ? "text-emerald-400" : "text-muted"}`}
-                        >
-                          {app.status === "connected"
-                            ? "Connected"
-                            : "Not connected"}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors ${
-                        app.status === "connected"
-                          ? "bg-red-500/10 text-red-400 hover:bg-red-500/20"
-                          : "bg-accent/10 text-accent hover:bg-accent/20"
-                      }`}
-                    >
-                      {app.status === "connected" ? "Disconnect" : "Connect"}
-                    </button>
-                  </div>
-                ))}
               </div>
             </motion.div>
           </motion.div>

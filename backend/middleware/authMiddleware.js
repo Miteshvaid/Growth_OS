@@ -14,10 +14,6 @@ const protect = async (req, res, next) => {
 
       req.user = await User.findById(decoded.id).select("-password");
 
-      console.log("AuthMiddleware - decoded.id:", decoded.id);
-      console.log("AuthMiddleware - req.user._id:", req.user._id);
-      console.log("AuthMiddleware - req.user.id:", req.user.id);
-
       next();
     } catch (error) {
       res.status(401).json({ message: "Not authorized, token failed" });

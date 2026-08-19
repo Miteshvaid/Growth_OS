@@ -1,9 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   PieChart,
@@ -17,6 +15,8 @@ import {
   AreaChart,
   Area,
 } from "recharts";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import { getAnalytics } from "../api/analytics";
 import Navbar from "../components/Navbar";
 import AnimatedNumber from "../components/AnimatedNumber";
@@ -120,18 +120,200 @@ function InsightCard({ title, value, subtitle, icon }) {
 export default function Analytics() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
   const [dateRange, setDateRange] = useState(30);
 
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [exporting, setExporting] = useState(null); // null | 'csv' | 'pdf'
+  const reportRef = useRef(null);
+  const exportDropdownRef = useRef(null);
+
   useEffect(() => {
-    getAnalytics()
-      .then(setData)
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    let cancelled = false;
+
+    const fetchAnalytics = async () => {
+      if (!data) setLoading(true);
+      else setRefreshing(true);
+      setError(null);
+
+      try {
+        const res = await getAnalytics(dateRange);
+        if (!cancelled) setData(res.data);
+      } catch (err) {
+        console.error("Analytics fetch error:", err);
+        if (!cancelled) setError("Failed to load analytics. Please retry.");
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          setRefreshing(false);
+        }
+      }
+    };
+
+    fetchAnalytics();
+    return () => {
+      cancelled = true;
+    };
+  }, [dateRange]);
+
+  // Click outside to close export menu
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        exportDropdownRef.current &&
+        !exportDropdownRef.current.contains(e.target)
+      ) {
+        setShowExportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const filterDataByRange = (dataArray) => {
-    if (!dataArray || dateRange === 0) return dataArray;
-    return dataArray.slice(-dateRange);
+  // CSV Export
+  const handleExportCSV = () => {
+    if (!data) return;
+    setExporting("csv");
+    try {
+      const { summary, trends, breakdown } = data;
+      const { focus = [], tasks = [] } = trends || {};
+      const { activities = {} } = breakdown || {};
+
+      let csv = "GROWTH OS - PRODUCTIVITY & FOCUS ANALYTICS REPORT\n";
+      csv += `Generated At,${new Date().toISOString()}\n`;
+      csv += `Period,${dateRange === 0 ? "All Time" : `${dateRange} Days`}\n\n`;
+
+      csv += "=== SUMMARY KPIS ===\n";
+      csv += "Metric,Value\n";
+      csv += `Total Check-ins,${summary?.totalCheckins || 0}\n`;
+      csv += `Average Focus Rating,${summary?.avgFocus || 0} / 5\n`;
+      csv += `Current Focus Streak,${summary?.currentStreak || 0} Days\n`;
+      csv += `Max Focus Streak,${summary?.maxStreak || 0} Days\n`;
+      csv += `Total Notes,${summary?.totalNotes || 0}\n`;
+      csv += `Total Tasks,${summary?.totalTasks || 0}\n`;
+      csv += `Completed Tasks,${summary?.completedTasks || 0}\n`;
+      csv += `Task Completion Rate,${summary?.completionRate || 0}%\n\n`;
+
+      csv += "=== ACTIVITY BREAKDOWN ===\n";
+      csv += "Activity,Sessions Logged\n";
+      Object.entries(activities).forEach(([act, count]) => {
+        csv += `"${act}",${count}\n`;
+      });
+      csv += "\n";
+
+      csv += "=== FOCUS SESSIONS (DAILY TREND) ===\n";
+      csv += "Date,Average Focus Rating,Check-in Count\n";
+      focus.forEach((f) => {
+        csv += `${f.date},${f.avgFocus},${f.count || 1}\n`;
+      });
+      csv += "\n";
+
+      csv += "=== TASK METRICS (DAILY TREND) ===\n";
+      csv += "Date,Tasks Created,Tasks Completed\n";
+      tasks.forEach((t) => {
+        csv += `${t.date},${t.total},${t.completed}\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `Growth_OS_Analytics_${new Date().toISOString().split("T")[0]}.csv`
+      );
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("CSV Export error:", err);
+      alert("Failed to generate CSV export");
+    } finally {
+      setExporting(null);
+      setShowExportMenu(false);
+    }
+  };
+
+  // PDF Export
+  const handleExportPDF = async () => {
+    if (!reportRef.current || !data) return;
+    setExporting("pdf");
+    try {
+      const element = reportRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#11121b",
+        logging: false,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const margin = 12;
+      const contentWidth = pdfWidth - margin * 2;
+      const contentHeight = (canvas.height * contentWidth) / canvas.width;
+
+      // Branded Title Bar
+      pdf.setFillColor(17, 18, 27);
+      pdf.rect(0, 0, pdfWidth, pdfHeight, "F");
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(16);
+      pdf.setTextColor(244, 243, 248);
+      pdf.text("Growth OS — Analytics & Growth Report", margin, margin + 4);
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9);
+      pdf.setTextColor(139, 136, 160);
+      const dateStr = new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      pdf.text(
+        `Generated on: ${dateStr} • Period: ${
+          dateRange === 0 ? "All Time" : `Last ${dateRange} Days`
+        }`,
+        margin,
+        margin + 10
+      );
+
+      // Render chart screenshot
+      const topOffset = margin + 14;
+      pdf.addImage(
+        imgData,
+        "PNG",
+        margin,
+        topOffset,
+        contentWidth,
+        Math.min(contentHeight, pdfHeight - topOffset - margin)
+      );
+
+      // Footer
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 120);
+      pdf.text(
+        "Growth OS • Personal Knowledge & Productivity System",
+        margin,
+        pdfHeight - 6
+      );
+
+      pdf.save(
+        `Growth_OS_Report_${new Date().toISOString().split("T")[0]}.pdf`
+      );
+    } catch (err) {
+      console.error("PDF Export error:", err);
+      alert("Failed to generate PDF report");
+    } finally {
+      setExporting(null);
+      setShowExportMenu(false);
+    }
   };
 
   if (loading) {
@@ -145,11 +327,22 @@ export default function Analytics() {
     );
   }
 
-  if (!data) {
+  if (error || !data) {
     return (
       <div className="min-h-screen bg-ink">
         <Navbar />
-        <div className="text-muted p-10">Error loading analytics</div>
+        <div className="max-w-md mx-auto text-center py-20 px-4">
+          <div className="text-4xl mb-4">⚠️</div>
+          <p className="text-muted mb-6">
+            {error || "Error loading analytics"}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-accent hover:bg-accent-light text-white px-6 py-2.5 rounded-xl text-sm font-medium transition-colors"
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -158,7 +351,6 @@ export default function Analytics() {
   const { focus, tasks } = trends || {};
   const { activities } = breakdown || {};
 
-  // Insights generate karo
   const insights = [];
 
   if (activities && Object.keys(activities).length > 0) {
@@ -194,14 +386,12 @@ export default function Analytics() {
     });
   }
 
-  // Heatmap data
   const heatmapData = (focus || []).map((f) => ({
     date: f.date,
-    count: 1,
+    count: f.count || 1,
     avgFocus: f.avgFocus,
   }));
 
-  // Activity distribution for pie chart
   const activityDistribution = activities
     ? Object.entries(activities).map(([tag, count]) => ({ tag, count }))
     : [];
@@ -222,258 +412,330 @@ export default function Analytics() {
           >
             ← Dashboard
           </Link>
-          <div className="flex items-center justify-between mt-2 mb-8">
-            <h1 className="font-display text-3xl text-cream">
+
+          {/* Page Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2 mb-8">
+            <h1 className="font-display text-3xl text-cream flex items-center gap-3">
               Focus Analytics
+              {refreshing && (
+                <span className="w-4 h-4 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+              )}
             </h1>
 
-            <div className="flex gap-1 bg-white/5 rounded-lg p-1">
-              {[7, 30, 90, 0].map((range) => (
+            <div className="flex items-center gap-3">
+              {/* Date Range Picker */}
+              <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+                {[7, 30, 90, 0].map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setDateRange(range)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      dateRange === range
+                        ? "bg-accent text-white"
+                        : "text-muted hover:text-cream"
+                    }`}
+                  >
+                    {range === 0 ? "All" : `${range}d`}
+                  </button>
+                ))}
+              </div>
+
+              {/* Export Dropdown */}
+              <div className="relative" ref={exportDropdownRef}>
                 <button
-                  key={range}
-                  onClick={() => setDateRange(range)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                    dateRange === range
-                      ? "bg-accent text-white"
-                      : "text-muted hover:text-cream"
-                  }`}
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  disabled={exporting !== null}
+                  className="bg-white/5 hover:bg-white/10 border border-white/10 text-cream text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-2 transition-all shadow-sm"
                 >
-                  {range === 0 ? "All" : `${range}d`}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Stat Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <StatCard
-              label="Total Check-ins"
-              value={summary?.totalCheckins || 0}
-              delay={0}
-            />
-            <StatCard
-              label="Focus Days"
-              value={
-                summary?.totalCheckins
-                  ? [...new Set(focus?.map((f) => f.date))].length
-                  : 0
-              }
-              delay={0.05}
-            />
-            <StatCard
-              label="Current Streak"
-              value={summary?.currentStreak || 0}
-              suffix="d"
-              delay={0.1}
-            />
-            <StatCard
-              label="Avg Focus"
-              value={summary?.avgFocus || 0}
-              suffix="/5"
-              delay={0.15}
-            />
-          </div>
-
-          {/* Insights */}
-          {insights.length > 0 && (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-              {insights.map((insight, i) => (
-                <InsightCard key={i} {...insight} />
-              ))}
-            </div>
-          )}
-
-          {/* Heatmap */}
-          <div className="mb-8">
-            <CalendarHeatmap data={heatmapData} />
-          </div>
-
-          {/* Charts */}
-          <div className="grid md:grid-cols-2 gap-5">
-            {/* Focus Trend */}
-            <ChartCard title="Focus Rating Trend" delay={0.2}>
-              {!focus || focus.length === 0 ? (
-                <EmptyState message="No focus check-ins yet" />
-              ) : (
-                <ResponsiveContainer width="100%" height={220}>
-                  <AreaChart data={filterDataByRange(focus)}>
-                    <defs>
-                      <linearGradient
-                        id="focusGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
+                  {exporting ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
+                      <span>Exporting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>📥 Export</span>
+                      <svg
+                        className={`w-3.5 h-3.5 text-muted transition-transform ${
+                          showExportMenu ? "rotate-180" : ""
+                        }`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
                       >
-                        <stop
-                          offset="5%"
-                          stopColor="#7c3aed"
-                          stopOpacity={0.3}
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
                         />
-                        <stop
-                          offset="95%"
-                          stopColor="#7c3aed"
-                          stopOpacity={0}
-                        />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="#ffffff10"
-                    />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fill: "#8a9388", fontSize: 11 }}
-                      tickFormatter={(d) => d.slice(5)}
-                    />
-                    <YAxis
-                      domain={[1, 5]}
-                      tick={{ fill: "#8a9388", fontSize: 11 }}
-                      allowDecimals={false}
-                      tickFormatter={(v) => FOCUS_LABELS[v] || v}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "#1a2118",
-                        border: "1px solid #ffffff20",
-                      }}
-                      formatter={(value) => [`${value}/5`, "Avg Focus"]}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="avgFocus"
-                      stroke="#7c3aed"
-                      strokeWidth={2}
-                      fill="url(#focusGradient)"
-                      animationDuration={1000}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              )}
-            </ChartCard>
+                      </svg>
+                    </>
+                  )}
+                </button>
 
-            {/* Task Completion */}
-            <ChartCard title="Task Completion" delay={0.25}>
-              {!tasks || tasks.length === 0 ? (
-                <EmptyState message="No tasks tracked yet" />
-              ) : (
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={filterDataByRange(tasks)}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="#ffffff10"
-                    />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fill: "#8a9388", fontSize: 11 }}
-                      tickFormatter={(d) => d.slice(5)}
-                    />
-                    <YAxis
-                      tick={{ fill: "#8a9388", fontSize: 11 }}
-                      allowDecimals={false}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        background: "#1a2118",
-                        border: "1px solid #ffffff20",
-                      }}
-                    />
-                    <Bar
-                      dataKey="completed"
-                      fill="#22c55e"
-                      radius={[4, 4, 0, 0]}
-                      name="Completed"
-                      animationDuration={800}
-                    />
-                    <Bar
-                      dataKey="total"
-                      fill="#3b82f6"
-                      radius={[4, 4, 0, 0]}
-                      name="Total"
-                      animationDuration={800}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </ChartCard>
-
-            {/* Activity Distribution */}
-            <ChartCard title="Focus Activities" delay={0.3}>
-              {activityDistribution.length === 0 ? (
-                <EmptyState message="No activities logged yet" />
-              ) : (
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie
-                      data={activityDistribution}
-                      dataKey="count"
-                      nameKey="tag"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      label={({ tag, count }) =>
-                        `${ACTIVITY_EMOJIS[tag] || "📝"} ${tag} (${count})`
-                      }
-                      animationDuration={800}
+                <AnimatePresence>
+                  {showExportMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 5, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 5, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 top-full mt-2 w-48 bg-ink-light border border-white/10 rounded-xl shadow-xl shadow-black/30 p-1.5 z-40"
                     >
-                      {activityDistribution.map((_, i) => (
-                        <Cell
-                          key={i}
-                          fill={COLORS[i % COLORS.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        background: "#1a2118",
-                        border: "1px solid #ffffff20",
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </ChartCard>
+                      <button
+                        onClick={handleExportPDF}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-cream/90 hover:text-cream hover:bg-white/5 rounded-lg text-left transition-colors"
+                      >
+                        <span>📄</span>
+                        <div>
+                          <p className="font-medium">Download PDF</p>
+                          <p className="text-[10px] text-muted">
+                            Formatted Visual Report
+                          </p>
+                        </div>
+                      </button>
 
-            {/* Task Overview */}
-            <ChartCard title="Task Overview" delay={0.35}>
-              {!summary || summary.totalTasks === 0 ? (
-                <EmptyState message="No tasks created yet" />
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between bg-ink rounded-lg px-4 py-3">
-                    <span className="text-cream text-sm">Total Tasks</span>
-                    <span className="text-accent font-display text-lg">
-                      <AnimatedNumber value={summary.totalTasks} />
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between bg-ink rounded-lg px-4 py-3">
-                    <span className="text-cream text-sm">Completed</span>
-                    <span className="text-green-400 font-display text-lg">
-                      <AnimatedNumber value={summary.completedTasks} />
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between bg-ink rounded-lg px-4 py-3">
-                    <span className="text-cream text-sm">Completion Rate</span>
-                    <span className="text-purple-400 font-display text-lg">
-                      <AnimatedNumber
-                        value={summary.completionRate || 0}
-                        suffix="%"
+                      <button
+                        onClick={handleExportCSV}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-cream/90 hover:text-cream hover:bg-white/5 rounded-lg text-left transition-colors"
+                      >
+                        <span>📊</span>
+                        <div>
+                          <p className="font-medium">Download CSV</p>
+                          <p className="text-[10px] text-muted">
+                            Raw Data & Trends
+                          </p>
+                        </div>
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+
+          {/* Report Container (captured for PDF export) */}
+          <div ref={reportRef} className="space-y-8 rounded-2xl">
+            {/* Stat Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard
+                label="Total Check-ins"
+                value={summary?.totalCheckins || 0}
+                delay={0}
+              />
+              <StatCard
+                label="Focus Days"
+                value={
+                  summary?.totalCheckins
+                    ? [...new Set(focus?.map((f) => f.date))].length
+                    : 0
+                }
+                delay={0.05}
+              />
+              <StatCard
+                label="Current Streak"
+                value={summary?.currentStreak || 0}
+                suffix="d"
+                delay={0.1}
+              />
+              <StatCard
+                label="Avg Focus"
+                value={summary?.avgFocus || 0}
+                suffix="/5"
+                decimals={1}
+                delay={0.15}
+              />
+            </div>
+
+            {/* Insights */}
+            {insights.length > 0 && (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {insights.map((insight, i) => (
+                  <InsightCard key={i} {...insight} />
+                ))}
+              </div>
+            )}
+
+            {/* Heatmap */}
+            <div>
+              <CalendarHeatmap data={heatmapData} />
+            </div>
+
+            {/* Charts */}
+            <div className="grid md:grid-cols-2 gap-5">
+              <ChartCard title="Focus Rating Trend" delay={0.2}>
+                {!focus || focus.length === 0 ? (
+                  <EmptyState message="No focus check-ins yet" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <AreaChart data={focus}>
+                      <defs>
+                        <linearGradient
+                          id="focusGradient"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#7c3aed"
+                            stopOpacity={0.3}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#7c3aed"
+                            stopOpacity={0}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fill: "#8a9388", fontSize: 11 }}
+                        tickFormatter={(d) => d.slice(5)}
                       />
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between bg-ink rounded-lg px-4 py-3">
-                    <span className="text-cream text-sm">Max Streak</span>
-                    <span className="text-orange-400 font-display text-lg">
-                      🔥{" "}
-                      <AnimatedNumber
-                        value={summary.maxStreak || 0}
-                        suffix="d"
+                      <YAxis
+                        domain={[1, 5]}
+                        tick={{ fill: "#8a9388", fontSize: 11 }}
+                        allowDecimals={false}
+                        tickFormatter={(v) => FOCUS_LABELS[v] || v}
                       />
-                    </span>
+                      <Tooltip
+                        contentStyle={{
+                          background: "#1a2118",
+                          border: "1px solid #ffffff20",
+                        }}
+                        formatter={(value) => [`${value}/5`, "Avg Focus"]}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="avgFocus"
+                        stroke="#7c3aed"
+                        strokeWidth={2}
+                        fill="url(#focusGradient)"
+                        animationDuration={1000}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartCard>
+
+              <ChartCard title="Task Completion" delay={0.25}>
+                {!tasks || tasks.length === 0 ? (
+                  <EmptyState message="No tasks tracked yet" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={tasks}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fill: "#8a9388", fontSize: 11 }}
+                        tickFormatter={(d) => d.slice(5)}
+                      />
+                      <YAxis
+                        tick={{ fill: "#8a9388", fontSize: 11 }}
+                        allowDecimals={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: "#1a2118",
+                          border: "1px solid #ffffff20",
+                        }}
+                      />
+                      <Bar
+                        dataKey="completed"
+                        fill="#22c55e"
+                        radius={[4, 4, 0, 0]}
+                        name="Completed"
+                        animationDuration={800}
+                      />
+                      <Bar
+                        dataKey="total"
+                        fill="#3b82f6"
+                        radius={[4, 4, 0, 0]}
+                        name="Total"
+                        animationDuration={800}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartCard>
+
+              <ChartCard title="Focus Activities" delay={0.3}>
+                {activityDistribution.length === 0 ? (
+                  <EmptyState message="No activities logged yet" />
+                ) : (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie
+                        data={activityDistribution}
+                        dataKey="count"
+                        nameKey="tag"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={80}
+                        label={({ tag, count }) =>
+                          `${ACTIVITY_EMOJIS[tag] || "📝"} ${tag} (${count})`
+                        }
+                        animationDuration={800}
+                      >
+                        {activityDistribution.map((_, i) => (
+                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          background: "#1a2118",
+                          border: "1px solid #ffffff20",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </ChartCard>
+
+              <ChartCard title="Task Overview" delay={0.35}>
+                {!summary || summary.totalTasks === 0 ? (
+                  <EmptyState message="No tasks created yet" />
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between bg-ink rounded-lg px-4 py-3">
+                      <span className="text-cream text-sm">Total Tasks</span>
+                      <span className="text-accent font-display text-lg">
+                        <AnimatedNumber value={summary.totalTasks} />
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between bg-ink rounded-lg px-4 py-3">
+                      <span className="text-cream text-sm">Completed</span>
+                      <span className="text-green-400 font-display text-lg">
+                        <AnimatedNumber value={summary.completedTasks} />
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between bg-ink rounded-lg px-4 py-3">
+                      <span className="text-cream text-sm">Completion Rate</span>
+                      <span className="text-purple-400 font-display text-lg">
+                        <AnimatedNumber
+                          value={summary.completionRate || 0}
+                          suffix="%"
+                        />
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between bg-ink rounded-lg px-4 py-3">
+                      <span className="text-cream text-sm">Max Streak</span>
+                      <span className="text-orange-400 font-display text-lg">
+                        🔥{" "}
+                        <AnimatedNumber
+                          value={summary.maxStreak || 0}
+                          suffix="d"
+                        />
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
-            </ChartCard>
+                )}
+              </ChartCard>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -481,7 +743,7 @@ export default function Analytics() {
   );
 }
 
-function StatCard({ label, value, suffix = "", delay = 0 }) {
+function StatCard({ label, value, suffix = "", delay = 0, decimals = 0 }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -491,7 +753,7 @@ function StatCard({ label, value, suffix = "", delay = 0 }) {
       className="bg-ink-light border border-white/5 rounded-xl p-4 text-center transition-colors hover:border-accent/30"
     >
       <p className="font-display text-2xl text-cream">
-        <AnimatedNumber value={value} suffix={suffix} />
+        <AnimatedNumber value={value} suffix={suffix} decimals={decimals} />
       </p>
       <p className="text-muted text-xs mt-1">{label}</p>
     </motion.div>

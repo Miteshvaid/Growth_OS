@@ -4,6 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { getNotes, createNote, updateNote, deleteNote } from "../api/notes";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import RichEditor from "../components/RichEditor";
+import QuizModal from "../components/QuizModal";
+
+const stripHtml = (html) => {
+  if (!html) return "";
+  return html.replace(/<[^>]*>?/gm, " ").replace(/\s+/g, " ").trim();
+};
 
 // --- Reusable Toast Component ---
 function Toast({ message, type, onClose }) {
@@ -33,6 +40,7 @@ function Notes() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
+  const [quizNote, setQuizNote] = useState(null);
   const [formData, setFormData] = useState({
     title: "",
     content: "",
@@ -41,38 +49,27 @@ function Notes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTag, setActiveTag] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [toast, setToast] = useState(null);
+
 
   useEffect(() => {
     fetchNotes();
   }, []);
 
-  // const fetchNotes = async () => {
-  //   try {
-  //     const data = await getNotes();
-  //     setNotes(data);
-  //   } catch (err) {
-  //     console.error(err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
   const fetchNotes = async () => {
     try {
       const res = await getNotes();
-      console.log("Raw API response:", res);
 
-      // Handle all cases
       let data = [];
       if (Array.isArray(res)) {
         data = res;
       } else if (res && Array.isArray(res.data)) {
         data = res.data;
       } else if (res && typeof res === "object") {
-        data = [res]; // Single object wrap in array
+        data = [res];
       }
 
-      console.log("Processed notes:", data);
       setNotes(data);
     } catch (err) {
       console.error("Fetch error:", err);
@@ -126,6 +123,15 @@ function Notes() {
         showToast("Note added ✅");
       }
 
+      // Clear draft storage
+      try {
+        localStorage.removeItem(
+          `growth_draft_${editingNote ? editingNote._id : "new_note"}`
+        );
+      } catch (e) {
+        console.error("Draft clear error:", e);
+      }
+
       // Clear form + close modal + refresh
       resetForm();
       setShowModal(false);
@@ -137,7 +143,11 @@ function Notes() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Ye note delete karna hai?")) return;
+    if (confirmDeleteId !== id) {
+      setConfirmDeleteId(id);
+      return;
+    }
+    setConfirmDeleteId(null);
     setDeletingId(id);
     try {
       await deleteNote(id);
@@ -187,7 +197,7 @@ function Notes() {
   const filteredNotes = notes.filter((note) => {
     const matchesSearch =
       note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      note.content.toLowerCase().includes(searchTerm.toLowerCase());
+      stripHtml(note.content).toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTag = !activeTag || note.tags.includes(activeTag);
     return matchesSearch && matchesTag;
   });
@@ -431,8 +441,8 @@ function Notes() {
                             </div>
 
                             <p className="text-muted text-sm line-clamp-3 mb-4 leading-relaxed">
-                              {note.content.slice(0, 140)}
-                              {note.content.length > 140 ? "..." : ""}
+                              {stripHtml(note.content).slice(0, 140)}
+                              {stripHtml(note.content).length > 140 ? "..." : ""}
                             </p>
 
                             <div className="flex items-center justify-between pt-3 border-t border-white/5">
@@ -451,28 +461,75 @@ function Notes() {
                                   </span>
                                 )}
                               </div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDelete(note._id);
-                                }}
-                                className="opacity-0 group-hover:opacity-100 text-muted hover:text-red-400 transition-all p-1.5 rounded-lg hover:bg-red-500/10"
-                              >
-                                <svg
-                                  className="w-4 h-4"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
+
+                              {/* Card Actions */}
+                              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                {/* AI Quiz Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setQuizNote(note);
+                                  }}
+                                  title="Generate AI Quiz from Note"
+                                  className="opacity-0 group-hover:opacity-100 text-[11px] px-2 py-1 bg-accent/15 hover:bg-accent text-accent hover:text-white rounded-lg transition-all flex items-center gap-1 font-medium shadow-sm"
                                 >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                  />
-                                </svg>
-                              </button>
+                                  <span>🧠</span>
+                                  <span>Quiz</span>
+                                </button>
+
+                                {/* Delete Button / Confirm */}
+                                {confirmDeleteId === note._id ? (
+                                  <div
+                                    className="flex items-center gap-1"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <span className="text-xs text-red-400 mr-1">Delete?</span>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDelete(note._id);
+                                      }}
+                                      className="text-xs px-2 py-1 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                                    >
+                                      ✓
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setConfirmDeleteId(null);
+                                      }}
+                                      className="text-xs px-2 py-1 bg-white/5 text-muted rounded-lg hover:bg-white/10 transition-colors"
+                                    >
+                                      ✗
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDelete(note._id);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 text-muted hover:text-red-400 transition-all p-1.5 rounded-lg hover:bg-red-500/10"
+                                    title="Delete Note"
+                                  >
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                      />
+                                    </svg>
+                                  </button>
+                                )}
+                              </div>
                             </div>
+
                           </motion.div>
                         );
                       })}
@@ -501,7 +558,7 @@ function Notes() {
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ duration: 0.25, ease: "easeOut" }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-ink-light border border-white/10 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+                className="bg-ink-light border border-white/10 rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
               >
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="font-display text-xl text-cream">
@@ -540,29 +597,21 @@ function Notes() {
                         setFormData({ ...formData, title: e.target.value })
                       }
                       required
-                      className="w-full bg-ink border border-white/10 rounded-xl px-4 py-3 text-cream placeholder-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all"
+                      className="w-full bg-ink border border-white/10 rounded-xl px-4 py-3 text-cream placeholder-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 transition-all text-sm"
                     />
                   </div>
 
                   <div>
                     <label className="text-xs text-muted mb-1.5 block">
-                      Content
+                      Content & Rich Notes
                     </label>
-                    <textarea
-                      placeholder="Write your thoughts here..."
-                      value={formData.content}
-                      onChange={(e) =>
-                        setFormData({ ...formData, content: e.target.value })
+                    <RichEditor
+                      content={formData.content}
+                      onChange={(html) =>
+                        setFormData((prev) => ({ ...prev, content: html }))
                       }
-                      required
-                      rows={6}
-                      className="w-full bg-ink border border-white/10 rounded-xl px-4 py-3 text-cream placeholder-muted/50 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/20 resize-none transition-all"
+                      draftKey={editingNote ? editingNote._id : "new_note"}
                     />
-                    <div className="flex justify-end mt-1">
-                      <span className="text-xs text-muted">
-                        {formData.content.length} chars
-                      </span>
-                    </div>
                   </div>
 
                   <div>
@@ -598,6 +647,16 @@ function Notes() {
                 </form>
               </motion.div>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* AI Quiz Generator Modal */}
+        <AnimatePresence>
+          {quizNote && (
+            <QuizModal
+              note={quizNote}
+              onClose={() => setQuizNote(null)}
+            />
           )}
         </AnimatePresence>
       </div>
