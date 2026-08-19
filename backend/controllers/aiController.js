@@ -3,7 +3,10 @@ const Note = require("../models/Note");
 // Helper: Strip HTML tags to pass clean content to Gemini prompt
 const stripHtml = (html) => {
   if (!html) return "";
-  return html.replace(/<[^>]*>?/gm, " ").replace(/\s+/g, " ").trim();
+  return html
+    .replace(/<[^>]*>?/gm, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 };
 
 // POST /api/ai/generate-quiz/:noteId
@@ -21,7 +24,8 @@ exports.generateQuizFromNote = async (req, res) => {
     const cleanContent = stripHtml(note.content);
     if (!cleanContent || cleanContent.length < 20) {
       return res.status(400).json({
-        message: "Note content is too short to generate a quiz. Please add more details to the note.",
+        message:
+          "Note content is too short to generate a quiz. Please add more details to the note.",
       });
     }
 
@@ -29,7 +33,8 @@ exports.generateQuizFromNote = async (req, res) => {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
       return res.status(500).json({
-        message: "GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.",
+        message:
+          "GEMINI_API_KEY is not configured on the server. Please add it to your environment variables.",
       });
     }
 
@@ -62,7 +67,7 @@ Rules:
 - Questions must be directly relevant and accurate according to the note.
 - Output ONLY valid parseable JSON.`;
 
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
 
     const geminiRes = await fetch(endpoint, {
       method: "POST",
@@ -74,7 +79,6 @@ Rules:
           },
         ],
         generationConfig: {
-          temperature: 0.2,
           responseMimeType: "application/json",
         },
       }),
@@ -94,20 +98,29 @@ Rules:
       geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     if (!rawOutput) {
-      return res.status(500).json({ message: "Empty response received from AI model" });
+      return res
+        .status(500)
+        .json({ message: "Empty response received from AI model" });
     }
 
     // 4. Safe JSON Parsing
     let cleanJson = rawOutput.trim();
     if (cleanJson.startsWith("```")) {
-      cleanJson = cleanJson.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+      cleanJson = cleanJson
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/, "");
     }
 
     let parsed;
     try {
       parsed = JSON.parse(cleanJson);
     } catch (parseError) {
-      console.error("JSON parse error from Gemini output:", parseError, "Raw:", rawOutput);
+      console.error(
+        "JSON parse error from Gemini output:",
+        parseError,
+        "Raw:",
+        rawOutput,
+      );
       return res.status(500).json({
         message: "Failed to parse structured quiz data from AI response",
         raw: rawOutput,
@@ -115,7 +128,11 @@ Rules:
     }
 
     // 5. Validate response structure
-    if (!parsed || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
+    if (
+      !parsed ||
+      !Array.isArray(parsed.questions) ||
+      parsed.questions.length === 0
+    ) {
       return res.status(500).json({
         message: "AI response did not contain expected questions format",
       });
@@ -125,8 +142,16 @@ Rules:
     const sanitizedQuestions = parsed.questions.map((q, idx) => ({
       id: idx + 1,
       question: q.question || `Question ${idx + 1}`,
-      options: Array.isArray(q.options) && q.options.length >= 2 ? q.options : ["True", "False", "Neither", "Both"],
-      correctIndex: typeof q.correctIndex === "number" && q.correctIndex >= 0 && q.correctIndex < (q.options?.length || 4) ? q.correctIndex : 0,
+      options:
+        Array.isArray(q.options) && q.options.length >= 2
+          ? q.options
+          : ["True", "False", "Neither", "Both"],
+      correctIndex:
+        typeof q.correctIndex === "number" &&
+        q.correctIndex >= 0 &&
+        q.correctIndex < (q.options?.length || 4)
+          ? q.correctIndex
+          : 0,
       explanation: q.explanation || "No explanation provided.",
     }));
 
