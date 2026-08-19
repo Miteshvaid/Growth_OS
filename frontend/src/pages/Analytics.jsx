@@ -257,23 +257,22 @@ export default function Analytics() {
 
         onclone: (clonedDoc) => {
           clonedDoc.querySelectorAll("*").forEach((el) => {
-            const style = clonedDoc.defaultView.getComputedStyle(el);
+            const computed = clonedDoc.defaultView.getComputedStyle(el);
 
-            if (style.color.includes("oklab")) {
+            if (computed.color.includes("oklab")) {
               el.style.color = "#f4f3f8";
             }
 
-            if (style.backgroundColor.includes("oklab")) {
+            if (computed.backgroundColor.includes("oklab")) {
               el.style.backgroundColor = "#11121b";
             }
 
-            if (style.borderColor.includes("oklab")) {
-              el.style.borderColor = "rgba(255,255,255,0.1)";
+            if (computed.borderColor.includes("oklab")) {
+              el.style.borderColor = "#333544";
             }
           });
         },
       });
-
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
 
