@@ -8,9 +8,20 @@ try {
 // Create test or SMTP transporter
 const createTransporter = () => {
   if (nodemailer && process.env.SMTP_HOST && process.env.SMTP_USER) {
+    // If Gmail host, use Nodemailer's built-in gmail service / 465 SSL for Render cloud compatibility
+    if (process.env.SMTP_HOST.includes("gmail")) {
+      return nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+    }
+
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT || 587,
+      port: Number(process.env.SMTP_PORT) || 587,
       secure: process.env.SMTP_SECURE === "true",
       auth: {
         user: process.env.SMTP_USER,
