@@ -47,7 +47,73 @@ const startReportCronJobs = () => {
     }
   });
 
-  console.log("🚀 [CRON] Automated Daily Email Report Scheduler initialized (Runs daily at 9:00 PM IST)");
+  // ⏰ 2. Weekly Report: Runs Every Sunday at 9:30 PM IST
+  cron.schedule("30 21 * * 0", async () => {
+    console.log("⏰ [CRON] Starting Weekly Analytics Email Dispatch...");
+    try {
+      const users = await User.find({ notificationEmail: { $exists: true, $ne: "" } });
+      for (const user of users) {
+        const [checkins, completedTasksCount, totalTasksCount] = await Promise.all([
+          FocusCheckin.find({ userId: user._id }),
+          Task.countDocuments({ userId: user._id, status: "done" }),
+          Task.countDocuments({ userId: user._id }),
+        ]);
+
+        const summary = {
+          totalCheckins: checkins.length,
+          avgFocus: checkins.length ? parseFloat((checkins.reduce((s, c) => s + c.focusRating, 0) / checkins.length).toFixed(1)) : 0,
+          completedTasks: completedTasksCount,
+          totalTasks: totalTasksCount,
+          currentStreak: user.currentStreak || 1,
+        };
+
+        await sendProductivityReport({
+          to: user.notificationEmail || user.email,
+          userName: user.name,
+          summary,
+          period: "Weekly",
+        });
+        console.log(`✅ [CRON] Weekly report sent to ${user.notificationEmail}`);
+      }
+    } catch (err) {
+      console.error("❌ [CRON] Weekly report error:", err.message);
+    }
+  });
+
+  // ⏰ 3. Monthly Report: Runs on 1st of Every Month at 10:00 PM IST
+  cron.schedule("0 22 1 * *", async () => {
+    console.log("⏰ [CRON] Starting Monthly Analytics Email Dispatch...");
+    try {
+      const users = await User.find({ notificationEmail: { $exists: true, $ne: "" } });
+      for (const user of users) {
+        const [checkins, completedTasksCount, totalTasksCount] = await Promise.all([
+          FocusCheckin.find({ userId: user._id }),
+          Task.countDocuments({ userId: user._id, status: "done" }),
+          Task.countDocuments({ userId: user._id }),
+        ]);
+
+        const summary = {
+          totalCheckins: checkins.length,
+          avgFocus: checkins.length ? parseFloat((checkins.reduce((s, c) => s + c.focusRating, 0) / checkins.length).toFixed(1)) : 0,
+          completedTasks: completedTasksCount,
+          totalTasks: totalTasksCount,
+          currentStreak: user.currentStreak || 1,
+        };
+
+        await sendProductivityReport({
+          to: user.notificationEmail || user.email,
+          userName: user.name,
+          summary,
+          period: "Monthly",
+        });
+        console.log(`✅ [CRON] Monthly report sent to ${user.notificationEmail}`);
+      }
+    } catch (err) {
+      console.error("❌ [CRON] Monthly report error:", err.message);
+    }
+  });
+
+  console.log("🚀 [CRON] Automated Daily, Weekly & Monthly Email Report Scheduler initialized");
 };
 
 module.exports = { startReportCronJobs };
