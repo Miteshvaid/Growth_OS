@@ -28,8 +28,6 @@ function Navbar() {
   });
   const [statsLoading, setStatsLoading] = useState(false);
 
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-
   const fetchProfileStats = async () => {
     setStatsLoading(true);
     try {
