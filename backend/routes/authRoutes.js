@@ -10,6 +10,7 @@ const {
   getCustomActivities,
   addCustomActivity,
   updateNotificationEmail,
+  sendTestReport,
 } = require("../controllers/authController");
 
 router.post("/register", register);
@@ -20,5 +21,6 @@ router.put("/change-password", protect, changePassword);
 router.get("/custom-activities", protect, getCustomActivities);
 router.post("/custom-activities", protect, addCustomActivity);
 router.put("/notification-email", protect, updateNotificationEmail);
+router.post("/send-test-report", protect, sendTestReport);
 
 module.exports = router;

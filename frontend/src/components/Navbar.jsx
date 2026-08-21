@@ -560,7 +560,24 @@ function Navbar() {
                     </button>
                   </div>
                   {emailStatusMsg && (
-                    <p className="text-xs font-medium text-emerald-400 mt-1">{emailStatusMsg}</p>
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                      <p className="text-xs font-medium text-emerald-400">{emailStatusMsg}</p>
+                      <button
+                        onClick={async () => {
+                          try {
+                            setEmailStatusMsg("Sending report email... ⏳");
+                            const { sendTestReport } = await import("../api/auth");
+                            const res = await sendTestReport();
+                            setEmailStatusMsg(res.data?.message || "Report sent to email! 📩");
+                          } catch (err) {
+                            setEmailStatusMsg("Email send failed ❌ Check credentials");
+                          }
+                        }}
+                        className="text-[11px] text-accent hover:underline flex items-center gap-1 font-medium bg-accent/10 px-2 py-1 rounded-md"
+                      >
+                        📧 Send Test Report Now
+                      </button>
+                    </div>
                   )}
                 </div>
 

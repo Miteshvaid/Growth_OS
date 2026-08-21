@@ -8,3 +8,4 @@ export const changePassword = (data) => API.put("/auth/change-password", data);
 export const getCustomActivities = () => API.get("/auth/custom-activities");
 export const addCustomActivity = (data) => API.post("/auth/custom-activities", data);
 export const updateNotificationEmail = (data) => API.put("/auth/notification-email", data);
+export const sendTestReport = () => API.post("/auth/send-test-report");
