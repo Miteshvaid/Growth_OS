@@ -2,7 +2,7 @@ const FocusCheckin = require("../models/FocusCheckin");
 const Note = require("../models/Note");
 const Task = require("../models/Task");
 
-const formatDate = (date) => date.toISOString().split("T")[0];
+const formatDate = (date) => new Date(date).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 
 const getDateRange = (days) => {
   const end = new Date();

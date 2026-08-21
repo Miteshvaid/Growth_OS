@@ -44,7 +44,7 @@ exports.createCheckin = async (req, res) => {
 // GET /api/focus-checkin/today - Aaj ke check-ins
 exports.getTodayCheckins = async (req, res) => {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
     const checkins = await FocusCheckin.find({
       userId: req.user.id,
       date: today,
@@ -59,7 +59,7 @@ exports.getTodayCheckins = async (req, res) => {
 // DELETE /api/focus-checkin/reset-today - Reset today's activities
 exports.resetTodayCheckins = async (req, res) => {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
     const userId = req.user._id || req.user.id;
     
     // Reset all checkins for today regardless of string format or objectid
@@ -109,7 +109,7 @@ exports.getHistory = async (req, res) => {
 // GET /api/focus-checkin/summary - Aaj ka summary
 exports.getDailySummary = async (req, res) => {
   try {
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
     const checkins = await FocusCheckin.find({
       userId: req.user.id,
       date: today,
