@@ -131,7 +131,7 @@ const sendProductivityReport = async ({ to, userName, summary, period = "Weekly"
   }
 
   return await transporter.sendMail({
-    from: `"GrowthOS Reports" <${process.env.SMTP_FROM || "reports@growthos.app"}>`,
+    from: process.env.SMTP_USER || `"GrowthOS Reports" <reports@growthos.app>`,
     to,
     subject: `🌱 Your GrowthOS ${period} Analytics Report (PDF Attached)`,
     html: htmlContent,
