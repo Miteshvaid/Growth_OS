@@ -389,7 +389,7 @@ export default function Analytics() {
           pdf.setFontSize(9.5);
           pdf.setFont("helvetica", "normal");
           pdf.setTextColor(30, 41, 59);
-          pdf.text(`${ACTIVITY_EMOJIS[act.tag] || "📝"} ${act.tag}`, 18, y + 5);
+          pdf.text(`• ${act.tag}`, 18, y + 5);
           pdf.text(`${act.count} sessions`, 120, y + 5);
           pdf.text(`${Math.round((act.count / totalSess) * 100)}%`, 160, y + 5);
           y += 7;
@@ -422,6 +422,8 @@ export default function Analytics() {
         pdf.text("Duration", 175, y + 5.5);
         y += 8;
 
+        const ratingText = { 5: "Peak 5/5", 4: "Good 4/5", 3: "Okay 3/5", 2: "Low 2/5", 1: "Poor 1/5" };
+
         sessionHistory.slice().reverse().forEach((sess) => {
           if (y > 270) {
             pdf.addPage();
@@ -431,8 +433,8 @@ export default function Analytics() {
           pdf.setFont("helvetica", "normal");
           pdf.setTextColor(30, 41, 59);
           pdf.text(`${sess.date} ${sess.startTime || ""}`, 18, y + 5);
-          pdf.text(`${sess.emoji || "⚡"} ${sess.activityType}`, 75, y + 5);
-          pdf.text(`${FOCUS_LABELS[sess.focusRating] || "⭐"} ${sess.focusRating}/5`, 140, y + 5);
+          pdf.text(`${sess.activityType}`, 75, y + 5);
+          pdf.text(`${ratingText[sess.focusRating] || `${sess.focusRating}/5`}`, 140, y + 5);
           pdf.text(`${sess.duration || 25}m`, 175, y + 5);
           y += 6.5;
         });
