@@ -320,81 +320,143 @@ export default function Analytics() {
   //   };
 
   const handleExportPDF = async () => {
-    if (!reportRef.current) return;
+    if (!data) return;
     setExporting("pdf");
 
-    const element = reportRef.current;
-
     try {
-      // Temporarily inject print/pdf friendly standard colors & styles
-      const pdfStyle = document.createElement("style");
-      pdfStyle.id = "pdf-export-style";
-      pdfStyle.innerHTML = `
-        #pdf-export-target {
-          background-color: #11121b !important;
-          color: #f4f3f8 !important;
-          padding: 24px !important;
-          border-radius: 16px !important;
-          width: 900px !important;
-        }
-        #pdf-export-target * {
-          box-shadow: none !important;
-          text-shadow: none !important;
-        }
-      `;
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      
+      // Header Banner
+      pdf.setFillColor(17, 18, 27);
+      pdf.rect(0, 0, pageWidth, 45, "F");
 
-      document.head.appendChild(pdfStyle);
-      element.setAttribute("id", "pdf-export-target");
+      pdf.setTextColor(52, 211, 153);
+      pdf.setFontSize(22);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("GrowthOS", 14, 20);
 
-      // Wait briefly for DOM style adjustments
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      pdf.setTextColor(203, 213, 225);
+      pdf.setFontSize(11);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(`Analytics & Productivity Report (${dateRange === 0 ? "All Time" : `Last ${dateRange} Days`})`, 14, 30);
+      pdf.text(`Generated: ${new Date().toLocaleString("en-IN")}`, 14, 38);
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#11121b",
-        logging: false,
-        windowWidth: 1024,
-      });
+      let y = 55;
 
-      const imgData = canvas.toDataURL("image/png");
+      // Summary KPIs Box
+      pdf.setFillColor(248, 250, 252);
+      pdf.roundedRect(14, y, pageWidth - 28, 48, 3, 3, "F");
 
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "pt",
-        format: "a4",
-      });
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFontSize(13);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("OVERALL SUMMARY & KPIS", 20, y + 12);
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "normal");
+      pdf.setTextColor(71, 85, 105);
 
-      const imgWidth = pdfWidth - 40; // 20pt margin left and right
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      pdf.text(`• Total Focus Check-ins: ${summary?.totalCheckins || 0}`, 20, y + 23);
+      pdf.text(`• Average Focus Rating: ${summary?.avgFocus || 0} / 5`, 20, y + 31);
+      pdf.text(`• Active Focus Streak: ${summary?.currentStreak || 0} Days (Max: ${summary?.maxStreak || 0}d)`, 20, y + 39);
 
-      let heightLeft = imgHeight;
-      let position = 20;
+      pdf.text(`• Total Tasks Tracked: ${summary?.totalTasks || 0}`, 110, y + 23);
+      pdf.text(`• Tasks Completed: ${summary?.completedTasks || 0} (${summary?.completionRate || 0}%)`, 110, y + 31);
+      pdf.text(`• Total Notes Created: ${summary?.totalNotes || 0}`, 110, y + 39);
 
-      // First page
-      pdf.addImage(imgData, "PNG", 20, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight - 40;
+      y += 58;
 
-      // Add pages if content exceeds A4 single page height
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight + 20;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 20, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight - 40;
+      // Section: Activity Breakdown
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("1. FOCUS ACTIVITIES DISTRIBUTION", 14, y);
+      y += 6;
+
+      if (activityDistribution && activityDistribution.length > 0) {
+        pdf.setFillColor(241, 245, 249);
+        pdf.rect(14, y, pageWidth - 28, 8, "F");
+        pdf.setFontSize(9);
+        pdf.setTextColor(51, 65, 85);
+        pdf.text("Activity Name", 18, y + 5.5);
+        pdf.text("Sessions Count", 120, y + 5.5);
+        pdf.text("Percentage", 160, y + 5.5);
+        y += 8;
+
+        const totalSess = activityDistribution.reduce((a, b) => a + b.count, 0) || 1;
+        activityDistribution.forEach((act) => {
+          pdf.setFontSize(9.5);
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(30, 41, 59);
+          pdf.text(`${ACTIVITY_EMOJIS[act.tag] || "📝"} ${act.tag}`, 18, y + 5);
+          pdf.text(`${act.count} sessions`, 120, y + 5);
+          pdf.text(`${Math.round((act.count / totalSess) * 100)}%`, 160, y + 5);
+          y += 7;
+        });
+      } else {
+        pdf.setFontSize(9.5);
+        pdf.setFont("helvetica", "italic");
+        pdf.setTextColor(100, 116, 139);
+        pdf.text("No activities logged for this period.", 18, y + 5);
+        y += 8;
       }
 
-      pdf.save(
-        `Growth_OS_Analytics_${new Date().toISOString().split("T")[0]}.pdf`
-      );
+      y += 8;
+
+      // Section: Detailed Session Timeline History
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("2. DETAILED FOCUS SESSIONS LOG", 14, y);
+      y += 6;
+
+      if (sessionHistory && sessionHistory.length > 0) {
+        pdf.setFillColor(241, 245, 249);
+        pdf.rect(14, y, pageWidth - 28, 8, "F");
+        pdf.setFontSize(9);
+        pdf.setTextColor(51, 65, 85);
+        pdf.text("Date & Time", 18, y + 5.5);
+        pdf.text("Activity Category", 75, y + 5.5);
+        pdf.text("Focus Rating", 140, y + 5.5);
+        pdf.text("Duration", 175, y + 5.5);
+        y += 8;
+
+        sessionHistory.slice().reverse().forEach((sess) => {
+          if (y > 270) {
+            pdf.addPage();
+            y = 20;
+          }
+          pdf.setFontSize(9);
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(30, 41, 59);
+          pdf.text(`${sess.date} ${sess.startTime || ""}`, 18, y + 5);
+          pdf.text(`${sess.emoji || "⚡"} ${sess.activityType}`, 75, y + 5);
+          pdf.text(`${FOCUS_LABELS[sess.focusRating] || "⭐"} ${sess.focusRating}/5`, 140, y + 5);
+          pdf.text(`${sess.duration || 25}m`, 175, y + 5);
+          y += 6.5;
+        });
+      } else {
+        pdf.setFontSize(9.5);
+        pdf.setFont("helvetica", "italic");
+        pdf.setTextColor(100, 116, 139);
+        pdf.text("No detailed focus session history available.", 18, y + 5);
+      }
+
+      // Footer Page Numbers
+      const totalPages = pdf.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        pdf.text(`GrowthOS Report • Page ${i} of ${totalPages}`, 14, 288);
+      }
+
+      pdf.save(`Growth_OS_Overall_Analytics_${new Date().toISOString().split("T")[0]}.pdf`);
     } catch (err) {
       console.error("PDF Export error:", err);
-      alert("Failed to generate PDF export: " + (err.message || err));
+      alert("Failed to generate PDF report: " + err.message);
     } finally {
-      element.removeAttribute("id");
-      document.getElementById("pdf-export-style")?.remove();
       setExporting(null);
       setShowExportMenu(false);
     }

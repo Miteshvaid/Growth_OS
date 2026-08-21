@@ -75,11 +75,67 @@ const sendProductivityReport = async ({ to, userName, summary, period = "Weekly"
     </div>
   `;
 
+  // Generate a formatted PDF attachment
+  let attachments = [];
+  try {
+    const { jsPDF } = require("jspdf");
+    const doc = new jsPDF();
+
+    // PDF Styling & Header
+    doc.setFillColor(13, 21, 18);
+    doc.rect(0, 0, 210, 40, "F");
+
+    doc.setTextColor(52, 211, 153);
+    doc.setFontSize(22);
+    doc.text("GrowthOS", 14, 22);
+
+    doc.setTextColor(203, 213, 225);
+    doc.setFontSize(11);
+    doc.text(`Official ${period} Productivity Analytics Report`, 14, 32);
+
+    // User details
+    doc.setTextColor(30, 41, 59);
+    doc.setFontSize(14);
+    doc.text(`Member: ${userName || "Productivity Champion"}`, 14, 52);
+    doc.setFontSize(10);
+    doc.text(`Generated Date: ${new Date().toLocaleDateString("en-IN")}`, 14, 60);
+
+    // Summary Section
+    doc.setFillColor(241, 245, 249);
+    doc.roundedRect(14, 68, 182, 60, 4, 4, "F");
+
+    doc.setFontSize(12);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Performance Summary Overview", 20, 80);
+
+    doc.setFontSize(10);
+    doc.setTextColor(71, 85, 105);
+    doc.text(`• Total Focus Check-ins: ${summary.totalCheckins || 0}`, 24, 92);
+    doc.text(`• Average Focus Rating: ${summary.avgFocus || 0} / 5`, 24, 100);
+    doc.text(`• Tasks Completed: ${summary.completedTasks || 0} / ${summary.totalTasks || 0}`, 24, 108);
+    doc.text(`• Active Focus Streak: ${summary.currentStreak || 0} Days`, 24, 116);
+
+    // Footer
+    doc.setFontSize(9);
+    doc.setTextColor(148, 163, 184);
+    doc.text("GrowthOS Analytics Suite • Automatic Periodical Report", 14, 280);
+
+    const pdfBuffer = Buffer.from(doc.output("arraybuffer"));
+    attachments.push({
+      filename: `GrowthOS_${period}_Report.pdf`,
+      content: pdfBuffer,
+      contentType: "application/pdf",
+    });
+  } catch (err) {
+    console.log("[EMAIL SERVICE] PDF Generation Notice:", err.message);
+  }
+
   return await transporter.sendMail({
     from: `"GrowthOS Reports" <${process.env.SMTP_FROM || "reports@growthos.app"}>`,
     to,
-    subject: `🌱 Your GrowthOS ${period} Analytics Report`,
+    subject: `🌱 Your GrowthOS ${period} Analytics Report (PDF Attached)`,
     html: htmlContent,
+    attachments,
   });
 };
 
