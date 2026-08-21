@@ -29,6 +29,10 @@ require("./models/Note");
 require("./models/FocusCheckin");
 require("./models/Task");
 
+// Cron Scheduler
+const { startReportCronJobs } = require("./cronScheduler");
+startReportCronJobs();
+
 // Routes
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/notes", require("./routes/noteRoutes"));

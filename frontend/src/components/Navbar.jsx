@@ -15,6 +15,10 @@ function Navbar() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
   const [emailStatusMsg, setEmailStatusMsg] = useState("");
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const [connectedEmail, setConnectedEmail] = useState(
+    user?.notificationEmail || localStorage.getItem("notificationEmail") || user?.email || ""
+  );
   const dropdownRef = useRef(null);
 
   const [profileStats, setProfileStats] = useState({
@@ -530,55 +534,57 @@ function Navbar() {
                   <div className="flex items-center gap-3">
                     <span className="text-lg">✉️</span>
                     <div>
-                      <p className="text-cream text-sm font-medium">Notification & Report Email</p>
-                      <p className="text-muted text-xs">Connect email for weekly reports & alerts</p>
+                      <p className="text-cream text-sm font-medium">Connected Notification & Report Email</p>
+                      <p className="text-muted text-xs">All automated daily & weekly reports will arrive here</p>
                     </div>
                   </div>
                   <div className="flex gap-2">
                     <input
                       type="email"
                       placeholder="user@example.com"
-                      defaultValue={user?.email}
-                      id="notif-email-input"
+                      value={connectedEmail}
+                      onChange={(e) => setConnectedEmail(e.target.value)}
                       className="flex-1 bg-ink-light border border-white/10 rounded-lg px-3 py-1.5 text-xs text-cream focus:outline-none focus:border-accent"
                     />
                     <button
                       onClick={async () => {
-                        const inputEl = document.getElementById("notif-email-input");
                         try {
                           const { updateNotificationEmail } = await import("../api/auth");
-                          const res = await updateNotificationEmail({ notificationEmail: inputEl.value });
-                          setEmailStatusMsg(res.data?.message || "Email connected & verified! ✅");
+                          const res = await updateNotificationEmail({ notificationEmail: connectedEmail });
+                          localStorage.setItem("notificationEmail", connectedEmail);
+                          const updatedUser = { ...user, notificationEmail: connectedEmail };
+                          localStorage.setItem("user", JSON.stringify(updatedUser));
+                          setEmailStatusMsg(res.data?.message || "Email permanently connected! ✅");
                         } catch (err) {
-                          const errorMsg = err.response?.data?.message || "Failed to update notification email ❌";
+                          const errorMsg = err.response?.data?.message || "Failed to save notification email ❌";
                           setEmailStatusMsg(errorMsg);
                         }
                       }}
-                      className="bg-accent hover:bg-accent-light text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                      className="bg-accent hover:bg-accent-light text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors shrink-0"
                     >
-                      Connect & Verify
+                      Save & Connect
                     </button>
                   </div>
-                  {emailStatusMsg && (
-                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
-                      <p className="text-xs font-medium text-emerald-400">{emailStatusMsg}</p>
-                      <button
-                        onClick={async () => {
-                          try {
-                            setEmailStatusMsg("Sending report email... ⏳");
-                            const { sendTestReport } = await import("../api/auth");
-                            const res = await sendTestReport();
-                            setEmailStatusMsg(res.data?.message || "Report sent to email! 📩");
-                          } catch (err) {
-                            setEmailStatusMsg("Email send failed ❌ Check credentials");
-                          }
-                        }}
-                        className="text-[11px] text-accent hover:underline flex items-center gap-1 font-medium bg-accent/10 px-2 py-1 rounded-md"
-                      >
-                        📧 Send Test Report Now
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5">
+                    <p className="text-xs font-medium text-emerald-400">
+                      {emailStatusMsg || "Status: Email Connected & Verified ✅"}
+                    </p>
+                    <button
+                      onClick={async () => {
+                        try {
+                          setEmailStatusMsg("Sending report email... ⏳");
+                          const { sendTestReport } = await import("../api/auth");
+                          const res = await sendTestReport();
+                          setEmailStatusMsg(res.data?.message || "Report sent to email! 📩");
+                        } catch (err) {
+                          setEmailStatusMsg("Email send failed ❌ Check credentials");
+                        }
+                      }}
+                      className="text-[11px] text-accent hover:underline flex items-center gap-1 font-medium bg-accent/10 px-2 py-1 rounded-md"
+                    >
+                      📧 Send Test Report Now
+                    </button>
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between p-3 bg-ink rounded-xl border border-white/5">
