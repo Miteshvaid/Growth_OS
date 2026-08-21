@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
-import { getProfile } from "../api/auth";
+import { getProfile, updateNotificationEmail, sendTestReport } from "../api/auth";
 
 function Navbar() {
   const { theme, toggleTheme } = useTheme();
@@ -547,7 +547,6 @@ function Navbar() {
                     <button
                       onClick={async () => {
                         try {
-                          const { updateNotificationEmail } = await import("../api/auth");
                           const res = await updateNotificationEmail({ notificationEmail: connectedEmail });
                           localStorage.setItem("notificationEmail", connectedEmail);
                           const updatedUser = { ...user, notificationEmail: connectedEmail };
@@ -571,7 +570,6 @@ function Navbar() {
                       onClick={async () => {
                         try {
                           setEmailStatusMsg("Sending report email... ⏳");
-                          const { sendTestReport } = await import("../api/auth");
                           const res = await sendTestReport();
                           setEmailStatusMsg(res.data?.message || "Report sent to email! 📩");
                         } catch (err) {
