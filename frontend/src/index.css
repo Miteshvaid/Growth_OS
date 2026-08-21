@@ -3,17 +3,19 @@
 @tailwind utilities;
 
 :root {
-  --bg-ink: #fcfbf7;
+  --bg-ink: #f8fafc;
   --bg-ink-light: #ffffff;
-  --text-cream: #1c2826;
-  --text-muted: #576561;
+  --text-cream: #0f172a;
+  --text-muted: #64748b;
+  --border-subtle: #e2e8f0;
 }
 
 .dark {
-  --bg-ink: #0d1512;
-  --bg-ink-light: #16221f;
-  --text-cream: #f4f7f5;
-  --text-muted: #8b9b95;
+  --bg-ink: #0b0f19;
+  --bg-ink-light: #111827;
+  --text-cream: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-subtle: rgba(255, 255, 255, 0.08);
 }
 
 body {

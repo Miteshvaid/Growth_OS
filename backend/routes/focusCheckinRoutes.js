@@ -5,6 +5,7 @@ const controller = require("../controllers/focusCheckinController");
 
 router.post("/", protect, controller.createCheckin);
 router.get("/today", protect, controller.getTodayCheckins);
+router.delete("/reset-today", protect, controller.resetTodayCheckins);
 router.get("/history", protect, controller.getHistory);
 router.get("/summary", protect, controller.getDailySummary);
 

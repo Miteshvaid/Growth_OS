@@ -14,6 +14,7 @@ function Navbar() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [profileImage, setProfileImage] = useState(null);
+  const [emailStatusMsg, setEmailStatusMsg] = useState("");
   const dropdownRef = useRef(null);
 
   const [profileStats, setProfileStats] = useState({
@@ -83,11 +84,11 @@ function Navbar() {
   };
 
   const links = [
-    { name: "Dashboard", path: "/dashboard" },
-    { name: "Tasks", path: "/tasks" },
-    { name: "Garden", path: "/notes" },
-    { name: "Analytics", path: "/analytics" },
+    { name: "Home", path: "/dashboard" },
     { name: "Focus", path: "/focus-checkin" },
+    { name: "Garden", path: "/notes" },
+    { name: "Tasks", path: "/tasks" },
+    { name: "Analytics", path: "/analytics" },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -548,9 +549,9 @@ function Navbar() {
                         try {
                           const { updateNotificationEmail } = await import("../api/auth");
                           await updateNotificationEmail({ notificationEmail: inputEl.value });
-                          alert("Email connected & verified! ✅");
+                          setEmailStatusMsg("Email connected & verified! ✅");
                         } catch (err) {
-                          alert("Failed to update notification email");
+                          setEmailStatusMsg("Failed to update notification email ❌");
                         }
                       }}
                       className="bg-accent hover:bg-accent-light text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
@@ -558,6 +559,9 @@ function Navbar() {
                       Connect & Verify
                     </button>
                   </div>
+                  {emailStatusMsg && (
+                    <p className="text-xs font-medium text-emerald-400 mt-1">{emailStatusMsg}</p>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-between p-3 bg-ink rounded-xl border border-white/5">

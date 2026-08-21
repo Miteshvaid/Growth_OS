@@ -227,69 +227,94 @@ function Dashboard() {
             <span>←</span> Back Overview
           </button>
 
-          <h1 className="font-display text-3xl text-cream mb-8">
-            What would you like to do?
-          </h1>
+          <div className="mb-8">
+            <h1 className="font-display text-3xl text-cream mb-2">
+              What would you like to do today?
+            </h1>
+            <p className="text-muted text-sm">
+              Welcome back to your workspace. Select a module below to start focusing, managing tasks, or analyzing your growth.
+            </p>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
             <Link
               to="/focus-checkin"
-              className="group glass-panel rounded-2xl p-6 hover:border-accent/40 transition-all hover:-translate-y-1.5 hover:shadow-xl hover:shadow-accent/10"
+              className="group bg-ink-light border border-white/10 rounded-2xl p-6 hover:border-accent/50 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10 flex flex-col justify-between"
             >
-              <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
-                🎯
+              <div>
+                <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
+                  🎯
+                </div>
+                <h3 className="font-display text-lg text-cream mb-2 group-hover:text-accent transition-colors">
+                  Focus Check-in
+                </h3>
+                <p className="text-muted text-xs leading-relaxed mb-4">
+                  Run custom Pomodoro sessions, log activities like System Design & Coding, and track real-time focus ratings.
+                </p>
               </div>
-              <h3 className="font-display text-lg text-cream mb-2 group-hover:text-accent transition-colors">
-                Focus Check-in
-              </h3>
-              <p className="text-muted text-sm leading-relaxed">
-                Log your focus sessions and track productivity.
-              </p>
+              <span className="text-[11px] text-accent font-medium group-hover:underline flex items-center gap-1">
+                Start Session →
+              </span>
             </Link>
 
             <Link
               to="/notes"
-              className="group glass-panel rounded-2xl p-6 hover:border-accent/40 transition-all hover:-translate-y-1.5 hover:shadow-xl hover:shadow-accent/10"
+              className="group bg-ink-light border border-white/10 rounded-2xl p-6 hover:border-accent/50 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10 flex flex-col justify-between"
             >
-              <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
-                🌱
+              <div>
+                <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
+                  🌱
+                </div>
+                <h3 className="font-display text-lg text-cream mb-2 group-hover:text-accent transition-colors">
+                  Knowledge Garden
+                </h3>
+                <p className="text-muted text-xs leading-relaxed mb-4">
+                  Capture thoughts with rich text & custom emojis, generate Gemini AI summaries, quizzes, and one-click PDF exports.
+                </p>
               </div>
-              <h3 className="font-display text-lg text-cream mb-2 group-hover:text-accent transition-colors">
-                Knowledge Garden
-              </h3>
-              <p className="text-muted text-sm leading-relaxed">
-                Capture and organize everything you learn.
-              </p>
+              <span className="text-[11px] text-accent font-medium group-hover:underline flex items-center gap-1">
+                Explore Garden →
+              </span>
             </Link>
 
             <Link
               to="/tasks"
-              className="group glass-panel rounded-2xl p-6 hover:border-accent/40 transition-all hover:-translate-y-1.5 hover:shadow-xl hover:shadow-accent/10"
+              className="group bg-ink-light border border-white/10 rounded-2xl p-6 hover:border-accent/50 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10 flex flex-col justify-between"
             >
-              <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
-                ✅
+              <div>
+                <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
+                  ✅
+                </div>
+                <h3 className="font-display text-lg text-cream mb-2 group-hover:text-accent transition-colors">
+                  Tasks & Goals
+                </h3>
+                <p className="text-muted text-xs leading-relaxed mb-4">
+                  Organize tasks on a Kanban board, assign priorities & due dates, and align your daily execution with long-term goals.
+                </p>
               </div>
-              <h3 className="font-display text-lg text-cream mb-2 group-hover:text-accent transition-colors">
-                Tasks & Goals
-              </h3>
-              <p className="text-muted text-sm leading-relaxed">
-                Manage tasks and track your goals.
-              </p>
+              <span className="text-[11px] text-accent font-medium group-hover:underline flex items-center gap-1">
+                Manage Tasks →
+              </span>
             </Link>
 
             <Link
               to="/analytics"
-              className="group glass-panel rounded-2xl p-6 hover:border-accent/40 transition-all hover:-translate-y-1.5 hover:shadow-xl hover:shadow-accent/10"
+              className="group bg-ink-light border border-white/10 rounded-2xl p-6 hover:border-accent/50 transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-accent/10 flex flex-col justify-between"
             >
-              <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
-                📊
+              <div>
+                <div className="text-3xl mb-4 group-hover:scale-110 transition-transform">
+                  📊
+                </div>
+                <h3 className="font-display text-lg text-cream mb-2 group-hover:text-accent transition-colors">
+                  Analytics
+                </h3>
+                <p className="text-muted text-xs leading-relaxed mb-4">
+                  Visualize historical focus trends, 90-day activity heatmaps, task completion metrics, and export PDF/CSV reports.
+                </p>
               </div>
-              <h3 className="font-display text-lg text-cream mb-2 group-hover:text-accent transition-colors">
-                Analytics
-              </h3>
-              <p className="text-muted text-sm leading-relaxed">
-                Visualize your progress and growth patterns.
-              </p>
+              <span className="text-[11px] text-accent font-medium group-hover:underline flex items-center gap-1">
+                View Trends →
+              </span>
             </Link>
           </div>
 
@@ -303,20 +328,20 @@ function Dashboard() {
               </>
             ) : (
               <>
-                <div className="glass-panel rounded-xl p-4 text-center hover:border-accent/30 transition-colors">
+                <div className="bg-ink-light border border-white/10 rounded-xl p-4 text-center hover:border-accent/30 transition-colors">
                   <p className="font-display text-2xl text-accent">{stats.notes}</p>
                   <p className="text-muted text-xs mt-1">Notes</p>
                 </div>
-                <div className="glass-panel rounded-xl p-4 text-center hover:border-orange-500/30 transition-colors">
+                <div className="bg-ink-light border border-white/10 rounded-xl p-4 text-center hover:border-orange-500/30 transition-colors">
                   <p className="font-display text-2xl text-orange-400">🔥 {stats.streak}d</p>
                   <p className="text-muted text-xs mt-1">Focus Streak</p>
                 </div>
-                <div className="glass-panel rounded-xl p-4 text-center hover:border-green-500/30 transition-colors">
-                  <p className="font-display text-2xl text-green-400">{stats.sessions}</p>
+                <div className="bg-ink-light border border-white/10 rounded-xl p-4 text-center hover:border-green-500/30 transition-colors">
+                  <p className="font-display text-2xl text-emerald-400">{stats.sessions}</p>
                   <p className="text-muted text-xs mt-1">Sessions Today</p>
                 </div>
-                <div className="glass-panel rounded-xl p-4 text-center hover:border-purple-500/30 transition-colors">
-                  <p className="font-display text-2xl text-purple-400">{stats.avgFocus} / 5</p>
+                <div className="bg-ink-light border border-white/10 rounded-xl p-4 text-center hover:border-purple-500/30 transition-colors">
+                  <p className="font-display text-2xl text-indigo-400">{stats.avgFocus} / 5</p>
                   <p className="text-muted text-xs mt-1">Avg Focus</p>
                 </div>
               </>

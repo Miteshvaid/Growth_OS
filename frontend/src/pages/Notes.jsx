@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getNotes, createNote, updateNote, deleteNote } from "../api/notes";
+import { summarizeNote } from "../api/ai";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import RichEditor from "../components/RichEditor";

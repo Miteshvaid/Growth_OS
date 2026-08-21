@@ -52,6 +52,39 @@ exports.getTodayCheckins = async (req, res) => {
   }
 };
 
+// DELETE /api/focus-checkin/reset-today - Reset today's activities
+exports.resetTodayCheckins = async (req, res) => {
+  try {
+    const today = new Date().toISOString().split("T")[0];
+    const userId = req.user._id || req.user.id;
+    
+    // Reset all checkins for today regardless of string format or objectid
+    await FocusCheckin.deleteMany({
+      $and: [
+        {
+          $or: [
+            { userId: userId },
+            { userId: String(userId) },
+            { userId: req.user._id },
+            { userId: req.user.id }
+          ]
+        },
+        {
+          $or: [
+            { date: today },
+            { date: { $regex: today } }
+          ]
+        }
+      ]
+    });
+    
+    res.json({ success: true, message: "Today's check-ins reset successfully" });
+  } catch (err) {
+    console.error("Reset checkins error:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // GET /api/focus-checkin/history - Poora history
 exports.getHistory = async (req, res) => {
   try {

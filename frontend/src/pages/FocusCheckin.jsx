@@ -4,6 +4,7 @@ import {
   createCheckin,
   getTodayCheckins,
   getDailySummary,
+  resetTodayCheckins,
 } from "../api/focusCheckin";
 import Navbar from "../components/Navbar";
 import PomodoroTimer from "../components/PomodoroTimer";
@@ -43,6 +44,7 @@ function FocusCheckin() {
 
   const [customActivitiesList, setCustomActivitiesList] = useState([]);
   const [showAddActivityModal, setShowAddActivityModal] = useState(false);
+  const [showConfirmResetModal, setShowConfirmResetModal] = useState(false);
   const [newActName, setNewActName] = useState("");
   const [newActEmoji, setNewActEmoji] = useState("⚡");
 
@@ -132,6 +134,18 @@ function FocusCheckin() {
       await loadTodayData();
     } catch (err) {
       console.error("Auto log error:", err);
+    }
+  };
+
+  const confirmResetToday = async () => {
+    try {
+      await resetTodayCheckins();
+      showToast("Today's activity reset! 🔄");
+      setShowConfirmResetModal(false);
+      await loadTodayData();
+    } catch (err) {
+      console.error("Reset error:", err);
+      showToast("Failed to reset today's activity", "error");
     }
   };
 
@@ -304,9 +318,21 @@ function FocusCheckin() {
                   <h2 className="text-sm font-display text-cream">
                     Today's Activity
                   </h2>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-muted">
-                    {todayCheckins.length} logged
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {todayCheckins.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmResetModal(true)}
+                        className="text-[11px] text-rose-400 hover:text-rose-300 hover:underline flex items-center gap-1 font-medium bg-rose-500/10 px-2 py-0.5 rounded-lg border border-rose-500/20"
+                        title="Reset all check-ins logged today"
+                      >
+                        🔄 Reset Today
+                      </button>
+                    )}
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-muted">
+                      {todayCheckins.length} logged
+                    </span>
+                  </div>
                 </div>
 
                 {todayCheckins.length === 0 ? (
@@ -337,11 +363,10 @@ function FocusCheckin() {
                           <p className="text-xs text-cream font-medium truncate">
                             {c.activityType}
                           </p>
-                          <p className="text-[10px] text-muted">
-                            {new Date(c.timestamp).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                          <p className="text-[10px] text-muted flex items-center gap-1.5 flex-wrap">
+                            <span>📅 {c.date}</span>
+                            <span>•</span>
+                            <span>⏰ {c.startTime || new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} {c.endTime ? `- ${c.endTime}` : ''}</span>
                           </p>
                         </div>
                         <span
@@ -440,6 +465,50 @@ function FocusCheckin() {
                     </button>
                   </div>
                 </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Reset Confirmation Modal */}
+        <AnimatePresence>
+          {showConfirmResetModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center px-4 z-50"
+              onClick={() => setShowConfirmResetModal(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-ink-light border border-white/10 rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl"
+              >
+                <div className="text-3xl mb-2">🔄</div>
+                <h3 className="font-display text-lg text-cream mb-2">Reset Today's Activity?</h3>
+                <p className="text-muted text-xs leading-relaxed mb-6">
+                  This will clear all focus check-in sessions logged for today. Your historical data for previous days remains safe.
+                </p>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={confirmResetToday}
+                    className="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-medium text-xs rounded-xl py-2.5 transition-all shadow-md"
+                  >
+                    Yes, Reset Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmResetModal(false)}
+                    className="px-4 text-xs text-muted hover:text-cream bg-white/5 hover:bg-white/10 rounded-xl transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </motion.div>
             </motion.div>
           )}

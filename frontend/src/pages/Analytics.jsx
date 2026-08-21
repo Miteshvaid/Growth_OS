@@ -60,6 +60,9 @@ function CalendarHeatmap({ data }) {
     weeks.push(daysData.slice(i, i + 7));
   }
 
+  const activeDays = daysData.filter((d) => d.count > 0).length;
+  const totalCheckinsLogged = daysData.reduce((acc, d) => acc + d.count, 0);
+
   const getIntensity = (count, avgFocus) => {
     if (count === 0) return "bg-white/5";
     const score = count * (avgFocus || 1);
@@ -71,32 +74,57 @@ function CalendarHeatmap({ data }) {
 
   return (
     <div className="bg-ink-light border border-white/5 rounded-2xl p-5">
-      <h3 className="text-cream font-medium mb-4 text-sm">
-        Focus Activity Heatmap (Last 90 Days)
-      </h3>
-      <div className="flex gap-1 overflow-x-auto pb-2">
-        {weeks.map((week, wi) => (
-          <div key={wi} className="flex flex-col gap-1">
-            {week.map((day, di) => (
-              <div
-                key={di}
-                title={`${day.date}: ${day.count} check-ins | Avg Focus: ${day.avgFocus || 0}`}
-                className={`w-3 h-3 rounded-sm ${getIntensity(day.count, day.avgFocus)} transition-all hover:ring-1 hover:ring-white/30`}
-              />
-            ))}
-          </div>
-        ))}
-      </div>
-      <div className="flex items-center gap-2 mt-3 text-xs text-muted">
-        <span>Less</span>
-        <div className="flex gap-1">
-          <div className="w-3 h-3 rounded-sm bg-white/5" />
-          <div className="w-3 h-3 rounded-sm bg-accent/20" />
-          <div className="w-3 h-3 rounded-sm bg-accent/40" />
-          <div className="w-3 h-3 rounded-sm bg-accent/60" />
-          <div className="w-3 h-3 rounded-sm bg-accent" />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+        <div>
+          <h3 className="text-cream font-medium text-sm">
+            Focus Activity Heatmap (Last 90 Days)
+          </h3>
+          <p className="text-muted text-xs mt-0.5">
+            Consistency tracking over time
+          </p>
         </div>
-        <span>More</span>
+        <div className="flex items-center gap-4 text-xs bg-ink px-3 py-1.5 rounded-xl border border-white/5">
+          <div>
+            <span className="text-muted">Active Days: </span>
+            <span className="text-emerald-400 font-semibold">{activeDays} / 90</span>
+          </div>
+          <div className="w-[1px] h-3 bg-white/10" />
+          <div>
+            <span className="text-muted">Total Logs: </span>
+            <span className="text-accent font-semibold">{totalCheckinsLogged}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-1.5">
+          {weeks.map((week, wi) => (
+            <div key={wi} className="flex flex-col gap-1.5">
+              {week.map((day, di) => (
+                <div
+                  key={di}
+                  title={`${day.date}: ${day.count} check-ins | Avg Focus: ${day.avgFocus || 0}`}
+                  className={`w-3.5 h-3.5 rounded-sm ${getIntensity(day.count, day.avgFocus)} transition-all hover:ring-1 hover:ring-white/40 cursor-pointer`}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between mt-3 text-xs text-muted">
+        <div className="flex items-center gap-2">
+          <span>Less</span>
+          <div className="flex gap-1">
+            <div className="w-3 h-3 rounded-sm bg-white/5" />
+            <div className="w-3 h-3 rounded-sm bg-accent/20" />
+            <div className="w-3 h-3 rounded-sm bg-accent/40" />
+            <div className="w-3 h-3 rounded-sm bg-accent/60" />
+            <div className="w-3 h-3 rounded-sm bg-accent" />
+          </div>
+          <span>More</span>
+        </div>
+        <span className="text-[11px] text-muted/70">Each block represents 1 day</span>
       </div>
     </div>
   );
@@ -402,7 +430,7 @@ export default function Analytics() {
     );
   }
 
-  const { summary, trends, breakdown } = data;
+  const { summary, trends, breakdown, sessionHistory } = data;
   const { focus, tasks } = trends || {};
   const { activities } = breakdown || {};
 
@@ -626,60 +654,106 @@ export default function Analytics() {
                 {!focus || focus.length === 0 ? (
                   <EmptyState message="No focus check-ins yet" />
                 ) : (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <AreaChart data={focus}>
-                      <defs>
-                        <linearGradient
-                          id="focusGradient"
-                          x1="0"
-                          y1="0"
-                          x2="0"
-                          y2="1"
-                        >
-                          <stop
-                            offset="5%"
-                            stopColor="#7c3aed"
-                            stopOpacity={0.3}
-                          />
-                          <stop
-                            offset="95%"
-                            stopColor="#7c3aed"
-                            stopOpacity={0}
-                          />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fill: "#8a9388", fontSize: 11 }}
-                        tickFormatter={(d) => d.slice(5)}
-                      />
-                      <YAxis
-                        domain={[1, 5]}
-                        tick={{ fill: "#8a9388", fontSize: 11 }}
-                        allowDecimals={false}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          background: "#16221f",
-                          border: "1px solid #ffffff20",
-                          borderRadius: "12px",
-                        }}
-                        formatter={(value, name, item) => [
-                          `${value}/5 (${item.payload.activities?.join(", ") || "General"})`,
-                          "Avg Focus",
-                        ]}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="avgFocus"
-                        stroke="#2e5b3e"
-                        strokeWidth={2}
-                        fill="url(#focusGradient)"
-                        animationDuration={1000}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  <div>
+                    <ResponsiveContainer width="100%" height={210}>
+                      <AreaChart data={focus} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient
+                            id="focusGradient"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="#6366f1"
+                              stopOpacity={0.4}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="#6366f1"
+                              stopOpacity={0}
+                            />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fill: "var(--text-muted)", fontSize: 11 }}
+                          tickFormatter={(d) => d.slice(5)}
+                        />
+                        <YAxis
+                          domain={[1, 5]}
+                          tick={{ fill: "var(--text-muted)", fontSize: 11 }}
+                          ticks={[1, 2, 3, 4, 5]}
+                          tickFormatter={(val) => {
+                            const ems = { 5: "🔥5", 4: "😊4", 3: "😐3", 2: "😕2", 1: "😞1" };
+                            return ems[val] || val;
+                          }}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: "var(--bg-ink-light)",
+                            border: "1px solid var(--border-subtle)",
+                            borderRadius: "12px",
+                            color: "var(--text-cream)",
+                          }}
+                          formatter={(value, name, item) => [
+                            `${FOCUS_LABELS[Math.round(value)] || "⭐"} ${value}/5 (${item.payload.activities?.join(", ") || "Focus Session"})`,
+                            "Avg Focus",
+                          ]}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="avgFocus"
+                          stroke="#6366f1"
+                          strokeWidth={3}
+                          fill="url(#focusGradient)"
+                          dot={{ r: 4, fill: "#818cf8", stroke: "#4f46e5", strokeWidth: 2 }}
+                          activeDot={{ r: 7, fill: "#34d399" }}
+                          animationDuration={1000}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+
+                    {/* Detailed Rating Breakdown Data with Times */}
+                    <div className="mt-4 pt-3 border-t border-white/5 space-y-2 max-h-[170px] overflow-y-auto pr-1">
+                      <p className="text-[11px] font-medium text-muted mb-2">Detailed Focus Activity Log:</p>
+                      {sessionHistory && sessionHistory.length > 0 ? (
+                        sessionHistory.slice().reverse().map((sess, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-ink px-3 py-2 rounded-xl text-xs border border-white/5">
+                            <div className="flex flex-col min-w-0 pr-2">
+                              <span className="text-cream font-medium flex items-center gap-1.5 truncate">
+                                <span>{sess.emoji || ACTIVITY_EMOJIS[sess.activityType] || "⚡"}</span>
+                                <span>{sess.activityType}</span>
+                              </span>
+                              <span className="text-[10px] text-muted flex items-center gap-1 mt-0.5">
+                                <span>📅 {sess.date}</span>
+                                <span>•</span>
+                                <span>⏰ {sess.startTime} {sess.endTime ? `- ${sess.endTime}` : ''}</span>
+                              </span>
+                            </div>
+                            <span className="text-amber-400 font-semibold text-xs shrink-0">
+                              {FOCUS_LABELS[sess.focusRating] || "⭐"} {sess.focusRating}/5
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        focus.slice().reverse().map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-ink px-3 py-1.5 rounded-lg text-xs">
+                            <span className="text-muted text-[11px]">📅 {item.date}</span>
+                            <span className="text-cream font-medium truncate max-w-[120px]">
+                              {item.activities?.length ? item.activities.join(", ") : "Focus Session"}
+                            </span>
+                            <span className="text-amber-400 font-semibold">
+                              {FOCUS_LABELS[Math.round(item.avgFocus)] || "⭐"} {item.avgFocus}/5
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 )}
               </ChartCard>
 
@@ -687,74 +761,127 @@ export default function Analytics() {
                 {!tasks || tasks.length === 0 ? (
                   <EmptyState message="No tasks tracked yet" />
                 ) : (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={tasks}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
-                      <XAxis
-                        dataKey="date"
-                        tick={{ fill: "#8a9388", fontSize: 11 }}
-                        tickFormatter={(d) => d.slice(5)}
-                      />
-                      <YAxis
-                        tick={{ fill: "#8a9388", fontSize: 11 }}
-                        allowDecimals={false}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          background: "#16221f",
-                          border: "1px solid #ffffff20",
-                          borderRadius: "12px",
-                        }}
-                      />
-                      <Bar
-                        dataKey="completed"
-                        fill="#34d399"
-                        radius={[4, 4, 0, 0]}
-                        name="Completed"
-                        animationDuration={800}
-                      />
-                      <Bar
-                        dataKey="total"
-                        fill="#3b82f6"
-                        radius={[4, 4, 0, 0]}
-                        name="Total"
-                        animationDuration={800}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <div>
+                    <ResponsiveContainer width="100%" height={210}>
+                      <BarChart data={tasks}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-subtle)" />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fill: "var(--text-muted)", fontSize: 11 }}
+                          tickFormatter={(d) => d.slice(5)}
+                        />
+                        <YAxis
+                          tick={{ fill: "var(--text-muted)", fontSize: 11 }}
+                          allowDecimals={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            background: "var(--bg-ink-light)",
+                            border: "1px solid var(--border-subtle)",
+                            borderRadius: "12px",
+                            color: "var(--text-cream)",
+                          }}
+                        />
+                        <Bar
+                          dataKey="completed"
+                          fill="#10b981"
+                          radius={[4, 4, 0, 0]}
+                          name="Completed"
+                          animationDuration={800}
+                        />
+                        <Bar
+                          dataKey="total"
+                          fill="#4f46e5"
+                          radius={[4, 4, 0, 0]}
+                          name="Total"
+                          animationDuration={800}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+
+                    {/* Detailed Task Completion Data */}
+                    <div className="mt-4 pt-3 border-t border-white/5 space-y-2 max-h-[170px] overflow-y-auto pr-1">
+                      <p className="text-[11px] font-medium text-muted mb-2">Daily Task Data:</p>
+                      {tasks.slice().reverse().map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between bg-ink px-3 py-1.5 rounded-lg text-xs border border-white/5">
+                          <span className="text-muted text-[11px]">📅 {item.date}</span>
+                          <span className="text-emerald-400 font-medium">
+                            {item.completed} / {item.total} Completed
+                          </span>
+                          <span className="text-indigo-400 font-medium">
+                            {item.total > 0 ? Math.round((item.completed / item.total) * 100) : 0}% Rate
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </ChartCard>
 
-              <ChartCard title="Focus Activities" delay={0.3}>
+              <ChartCard title="Focus Activities Data" delay={0.3}>
                 {activityDistribution.length === 0 ? (
                   <EmptyState message="No activities logged yet" />
                 ) : (
-                  <ResponsiveContainer width="100%" height={220}>
-                    <PieChart>
-                      <Pie
-                        data={activityDistribution}
-                        dataKey="count"
-                        nameKey="tag"
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        label={({ tag, count }) =>
-                          `${ACTIVITY_EMOJIS[tag] || "📝"} ${tag} (${count})`
-                        }
-                        animationDuration={800}
-                      >
-                        {activityDistribution.map((_, i) => (
-                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          background: "#1a2118",
-                          border: "1px solid #ffffff20",
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <div>
+                    <ResponsiveContainer width="100%" height={210}>
+                      <PieChart>
+                        <Pie
+                          data={activityDistribution}
+                          dataKey="count"
+                          nameKey="tag"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={75}
+                          label={({ tag, count }) =>
+                            `${ACTIVITY_EMOJIS[tag] || "📝"} ${tag} (${count})`
+                          }
+                          animationDuration={800}
+                        >
+                          {activityDistribution.map((_, i) => (
+                            <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            background: "var(--bg-ink-light)",
+                            border: "1px solid var(--border-subtle)",
+                            borderRadius: "12px",
+                            color: "var(--text-cream)",
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+
+                    {/* Detailed Activity Distribution Table with Recent Session Timestamps */}
+                    <div className="mt-4 pt-3 border-t border-white/5 space-y-2 max-h-[170px] overflow-y-auto pr-1">
+                      <p className="text-[11px] font-medium text-muted mb-2">Activities Timeline & Sessions Log:</p>
+                      {sessionHistory && sessionHistory.length > 0 ? (
+                        sessionHistory.slice().reverse().map((sess, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-ink px-3 py-1.5 rounded-lg text-xs border border-white/5">
+                            <span className="text-cream font-medium flex items-center gap-1.5 truncate">
+                              <span>{sess.emoji || ACTIVITY_EMOJIS[sess.activityType] || "📝"}</span>
+                              <span>{sess.activityType}</span>
+                            </span>
+                            <span className="text-muted text-[10px]">
+                              📅 {sess.date} • ⏰ {sess.startTime}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        activityDistribution.map((act, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-ink px-3 py-1.5 rounded-lg text-xs">
+                            <span className="text-cream font-medium flex items-center gap-1.5">
+                              <span>{ACTIVITY_EMOJIS[act.tag] || "📝"}</span>
+                              <span>{act.tag}</span>
+                            </span>
+                            <span className="text-accent font-semibold">
+                              {act.count} sessions
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 )}
               </ChartCard>
 
