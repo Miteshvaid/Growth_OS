@@ -1,8 +1,13 @@
-const nodemailer = require("nodemailer");
+let nodemailer;
+try {
+  nodemailer = require("nodemailer");
+} catch (e) {
+  console.log("[EMAIL SERVICE] Notice: nodemailer package not installed yet.");
+}
 
 // Create test or SMTP transporter
 const createTransporter = () => {
-  if (process.env.SMTP_HOST && process.env.SMTP_USER) {
+  if (nodemailer && process.env.SMTP_HOST && process.env.SMTP_USER) {
     return nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT || 587,
@@ -14,7 +19,7 @@ const createTransporter = () => {
     });
   }
   
-  // Return test stream if SMTP not configured (simulates email delivery without throwing errors)
+  // Return test stream if SMTP not configured or nodemailer missing
   return {
     sendMail: async (options) => {
       console.log("----------------------------------------");
