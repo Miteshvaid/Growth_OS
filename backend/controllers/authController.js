@@ -228,39 +228,53 @@ const addCustomActivity = async (req, res) => {
   }
 };
 
-// ✅ NOTIFICATION EMAIL & VERIFICATION
 const updateNotificationEmail = async (req, res) => {
   try {
     const { notificationEmail } = req.body;
-    const user = await User.findById(req.user._id);
+    if (!notificationEmail) {
+      return res.status(400).json({ message: "Notification email is required" });
+    }
+
+    const userId = req.user._id || req.user.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
     user.notificationEmail = notificationEmail;
-    user.emailVerified = true; // Auto verify for simplicity
+    user.emailVerified = true;
     await user.save();
 
-    // Trigger test report email immediately upon connecting
-    const { sendProductivityReport } = require("../emailService");
-    const summary = {
-      totalCheckins: 7,
-      avgFocus: 4.5,
-      completedTasks: 5,
-      totalTasks: 6,
-      currentStreak: user.currentStreak || 3,
-    };
-    
-    sendProductivityReport({
-      to: user.notificationEmail || user.email,
-      userName: user.name,
-      summary,
-      period: "Weekly & Automated",
-    }).catch((err) => console.log("Report email send notice:", err.message));
+    // Send report safely in background without blocking API response
+    try {
+      const { sendProductivityReport } = require("../emailService");
+      const summary = {
+        totalCheckins: 7,
+        avgFocus: 4.5,
+        completedTasks: 5,
+        totalTasks: 6,
+        currentStreak: user.currentStreak || 3,
+      };
+      
+      sendProductivityReport({
+        to: user.notificationEmail || user.email,
+        userName: user.name || "User",
+        summary,
+        period: "Weekly & Automated",
+      }).catch((err) => console.log("[EMAIL SERVICE] Notice:", err.message));
+    } catch (e) {
+      console.log("[EMAIL SERVICE] Trigger skip:", e.message);
+    }
 
-    res.json({
-      message: "Notification email updated, verified and automated report generated",
+    return res.json({
+      success: true,
+      message: "Notification email updated and verified!",
       notificationEmail: user.notificationEmail,
       emailVerified: user.emailVerified,
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("updateNotificationEmail error:", error);
+    return res.status(500).json({ message: error.message || "Failed to update email" });
   }
 };
 

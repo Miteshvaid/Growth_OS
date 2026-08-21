@@ -545,13 +545,13 @@ function Navbar() {
                     <button
                       onClick={async () => {
                         const inputEl = document.getElementById("notif-email-input");
-                        if (!inputEl || !inputEl.value) return;
                         try {
                           const { updateNotificationEmail } = await import("../api/auth");
-                          await updateNotificationEmail({ notificationEmail: inputEl.value });
-                          setEmailStatusMsg("Email connected & verified! ✅");
+                          const res = await updateNotificationEmail({ notificationEmail: inputEl.value });
+                          setEmailStatusMsg(res.data?.message || "Email connected & verified! ✅");
                         } catch (err) {
-                          setEmailStatusMsg("Failed to update notification email ❌");
+                          const errorMsg = err.response?.data?.message || "Failed to update notification email ❌";
+                          setEmailStatusMsg(errorMsg);
                         }
                       }}
                       className="bg-accent hover:bg-accent-light text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
