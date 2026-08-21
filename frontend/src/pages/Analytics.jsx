@@ -658,19 +658,22 @@ export default function Analytics() {
                         domain={[1, 5]}
                         tick={{ fill: "#8a9388", fontSize: 11 }}
                         allowDecimals={false}
-                        tickFormatter={(v) => FOCUS_LABELS[v] || v}
                       />
                       <Tooltip
                         contentStyle={{
-                          background: "#1a2118",
+                          background: "#16221f",
                           border: "1px solid #ffffff20",
+                          borderRadius: "12px",
                         }}
-                        formatter={(value) => [`${value}/5`, "Avg Focus"]}
+                        formatter={(value, name, item) => [
+                          `${value}/5 (${item.payload.activities?.join(", ") || "General"})`,
+                          "Avg Focus",
+                        ]}
                       />
                       <Area
                         type="monotone"
                         dataKey="avgFocus"
-                        stroke="#7c3aed"
+                        stroke="#2e5b3e"
                         strokeWidth={2}
                         fill="url(#focusGradient)"
                         animationDuration={1000}
@@ -698,13 +701,14 @@ export default function Analytics() {
                       />
                       <Tooltip
                         contentStyle={{
-                          background: "#1a2118",
+                          background: "#16221f",
                           border: "1px solid #ffffff20",
+                          borderRadius: "12px",
                         }}
                       />
                       <Bar
                         dataKey="completed"
-                        fill="#22c55e"
+                        fill="#34d399"
                         radius={[4, 4, 0, 0]}
                         name="Completed"
                         animationDuration={800}

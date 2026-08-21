@@ -31,6 +31,7 @@ exports.createNote = async (req, res) => {
       title: req.body.title,
       content: req.body.content,
       tags: req.body.tags || [],
+      icon: req.body.icon || "📝",
     });
     res.status(201).json(note);
   } catch (error) {
@@ -40,14 +41,17 @@ exports.createNote = async (req, res) => {
 
 exports.updateNote = async (req, res) => {
   try {
+    const updateData = {
+      title: req.body.title,
+      content: req.body.content,
+      tags: req.body.tags,
+    };
+    if (req.body.icon) updateData.icon = req.body.icon;
+
     const note = await Note.findOneAndUpdate(
       { _id: req.params.id, userId: req.user.id },
       {
-        $set: {
-          title: req.body.title,
-          content: req.body.content,
-          tags: req.body.tags,
-        },
+        $set: updateData,
         $inc: { editCount: 1 },
       },
       { new: true },

@@ -44,19 +44,38 @@ const playChime = () => {
 };
 
 export default function PomodoroTimer({ onAutoLogCheckin, currentActivity = "Coding" }) {
-  const [mode, setMode] = useState("work");
-  const [duration, setDuration] = useState(MODES.work.defaultMinutes * 60);
-  const [timeLeft, setTimeLeft] = useState(MODES.work.defaultMinutes * 60);
+  const [mode, setMode] = useState("work"); // 'work' or 'break'
+  const [customFocusMins, setCustomFocusMins] = useState(25);
+  const [customBreakMins, setCustomBreakMins] = useState(5);
+  
+  const [duration, setDuration] = useState(25 * 60);
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [completedCount, setCompletedCount] = useState(0);
 
   const timerRef = useRef(null);
 
+  // Request browser notification permission
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // Update timer whenever custom focus or break duration changes if not running
+  useEffect(() => {
+    if (!isRunning) {
+      const secs = mode === "work" ? customFocusMins * 60 : customBreakMins * 60;
+      setDuration(secs);
+      setTimeLeft(secs);
+    }
+  }, [customFocusMins, customBreakMins, mode]);
+
   // Switch modes
   const handleModeSwitch = (newMode) => {
     setIsRunning(false);
     setMode(newMode);
-    const secs = MODES[newMode].defaultMinutes * 60;
+    const secs = newMode === "work" ? customFocusMins * 60 : customBreakMins * 60;
     setDuration(secs);
     setTimeLeft(secs);
   };
@@ -78,7 +97,13 @@ export default function PomodoroTimer({ onAutoLogCheckin, currentActivity = "Cod
       if (timerRef.current) clearInterval(timerRef.current);
     }
     return () => clearInterval(timerRef.current);
-  }, [isRunning, mode, duration, currentActivity]);
+  }, [isRunning, mode, duration, customFocusMins, customBreakMins, currentActivity]);
+
+  const sendNotification = (title, body) => {
+    if ("Notification" in window && Notification.permission === "granted") {
+      new Notification(title, { body, icon: "/favicon.svg" });
+    }
+  };
 
   const handleSessionEnd = () => {
     setIsRunning(false);
@@ -86,16 +111,16 @@ export default function PomodoroTimer({ onAutoLogCheckin, currentActivity = "Cod
 
     if (mode === "work") {
       setCompletedCount((prev) => prev + 1);
-      // Auto log check-in
+      sendNotification("Pomodoro Complete! 🎉", `Great job! Your ${customFocusMins}m focus session ended.`);
       if (onAutoLogCheckin) {
         onAutoLogCheckin({
           activityType: currentActivity || "Coding",
           focusRating: 5,
         });
       }
-      // Suggest short break
-      handleModeSwitch("shortBreak");
+      handleModeSwitch("break");
     } else {
+      sendNotification("Break Ended! ⚡", "Time to get back into deep focus mode!");
       handleModeSwitch("work");
     }
   };
@@ -123,28 +148,62 @@ export default function PomodoroTimer({ onAutoLogCheckin, currentActivity = "Cod
       {/* Background Glow */}
       <div className="absolute -top-12 -right-12 w-36 h-36 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
 
-      {/* Mode Selector */}
-      <div className="flex bg-ink rounded-xl p-1 border border-white/5 mb-6 text-xs gap-1">
-        {Object.entries(MODES).map(([key, config]) => (
+      {/* Mode Selector & Custom Durations */}
+      <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 bg-ink p-2.5 rounded-xl border border-white/5">
+        <div className="flex bg-ink-light rounded-lg p-1 border border-white/5 text-xs gap-1">
           <button
-            key={key}
-            onClick={() => handleModeSwitch(key)}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all ${
-              mode === key
-                ? "bg-accent text-white shadow-sm"
-                : "text-muted hover:text-cream"
+            onClick={() => handleModeSwitch("work")}
+            className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+              mode === "work" ? "bg-accent text-white shadow-sm" : "text-muted hover:text-cream"
             }`}
           >
-            <span className="mr-1">{config.icon}</span>
-            {config.label}
+            🎯 Focus Mode
           </button>
-        ))}
+          <button
+            onClick={() => handleModeSwitch("break")}
+            className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+              mode === "break" ? "bg-emerald-600 text-white shadow-sm" : "text-muted hover:text-cream"
+            }`}
+          >
+            ☕ Break Mode
+          </button>
+        </div>
+
+        {/* Custom Duration Inputs */}
+        <div className="flex items-center gap-2 text-xs text-muted">
+          <div className="flex items-center gap-1">
+            <span>Focus:</span>
+            <input
+              type="number"
+              min="1"
+              max="180"
+              value={customFocusMins}
+              onChange={(e) => setCustomFocusMins(Math.max(1, parseInt(e.target.value) || 1))}
+              disabled={isRunning}
+              className="w-12 bg-ink border border-white/10 rounded px-1.5 py-0.5 text-center text-cream font-medium focus:outline-none focus:border-accent"
+            />
+            <span>m</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <span>Break:</span>
+            <input
+              type="number"
+              min="1"
+              max="60"
+              value={customBreakMins}
+              onChange={(e) => setCustomBreakMins(Math.max(1, parseInt(e.target.value) || 1))}
+              disabled={isRunning}
+              className="w-12 bg-ink border border-white/10 rounded px-1.5 py-0.5 text-center text-cream font-medium focus:outline-none focus:border-accent"
+            />
+            <span>m</span>
+          </div>
+        </div>
       </div>
 
       {/* Circular Progress Display */}
       <div className="relative my-2 flex items-center justify-center">
         <svg width={size} height={size} className="transform -rotate-90">
-          {/* Background circle */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -154,7 +213,6 @@ export default function PomodoroTimer({ onAutoLogCheckin, currentActivity = "Cod
             fill="transparent"
             className="text-white/5"
           />
-          {/* Progress circle */}
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -166,11 +224,7 @@ export default function PomodoroTimer({ onAutoLogCheckin, currentActivity = "Cod
             strokeLinecap="round"
             fill="transparent"
             className={`${
-              mode === "work"
-                ? "text-accent"
-                : mode === "shortBreak"
-                ? "text-emerald-400"
-                : "text-sky-400"
+              mode === "work" ? "text-accent" : "text-emerald-400"
             } transition-all duration-500`}
           />
         </svg>
@@ -181,7 +235,7 @@ export default function PomodoroTimer({ onAutoLogCheckin, currentActivity = "Cod
             {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
           </span>
           <span className="text-[11px] text-muted capitalize mt-0.5">
-            {MODES[mode].label}
+            {mode === "work" ? "Focus Phase" : "Break Phase"}
           </span>
         </div>
       </div>
@@ -197,7 +251,7 @@ export default function PomodoroTimer({ onAutoLogCheckin, currentActivity = "Cod
               : "bg-accent hover:bg-accent-light text-white shadow-accent/25"
           }`}
         >
-          <span>{isRunning ? "⏸ Pause" : "▶ Start Focus"}</span>
+          <span>{isRunning ? "⏸ Pause" : "▶ Start Session"}</span>
         </motion.button>
 
         <button
@@ -211,8 +265,8 @@ export default function PomodoroTimer({ onAutoLogCheckin, currentActivity = "Cod
 
       {/* Footer Info */}
       <div className="mt-5 pt-4 border-t border-white/5 w-full flex items-center justify-between text-[11px] text-muted">
-        <span>Completed Today: <strong className="text-cream">{completedCount}</strong></span>
-        <span>Auto-logs at 00:00</span>
+        <span>Focus Sessions Completed Today: <strong className="text-cream">{completedCount}</strong></span>
+        <span>Sound & Notification Active</span>
       </div>
     </div>
   );

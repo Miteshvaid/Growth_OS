@@ -5,11 +5,12 @@ export default {
   theme: {
     extend: {
       colors: {
-        accent: "#7c3aed",
-        "accent-light": "#8b5cf6",
-        sprout: "#22c55e",
-        "sprout-light": "#4ade80",
-        amber: "#f59e0b",
+        accent: "#2e5b3e",
+        "accent-light": "#3d7350",
+        "accent-dark": "#1b3b27",
+        sprout: "#34d399",
+        "sprout-light": "#6ee7b7",
+        amber: "#d97706",
         ink: "var(--bg-ink)",
         "ink-light": "var(--bg-ink-light)",
         cream: "var(--text-cream)",

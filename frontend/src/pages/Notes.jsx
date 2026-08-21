@@ -82,9 +82,14 @@ function Notes() {
     setToast({ message, type });
   };
 
+  const [summarizingId, setSummarizingId] = useState(null);
+  const [activeSummary, setActiveSummary] = useState(null);
+
+  const EMOJI_OPTIONS = ["📝", "💡", "🌲", "🧠", "💻", "⚛️", "📜", "📚", "🚀", "🎨", "⚙️", "🎯"];
+
   const openNewNoteModal = () => {
     setEditingNote(null);
-    setFormData({ title: "", content: "", tags: "" });
+    setFormData({ title: "", content: "", tags: "", icon: "📝" });
     setShowModal(true);
   };
 
@@ -93,13 +98,14 @@ function Notes() {
     setFormData({
       title: note.title,
       content: note.content,
-      tags: note.tags.join(", "),
+      tags: (note.tags || []).join(", "),
+      icon: note.icon || "📝",
     });
     setShowModal(true);
   };
 
   const resetForm = () => {
-    setFormData({ title: "", content: "", tags: "" });
+    setFormData({ title: "", content: "", tags: "", icon: "📝" });
     setEditingNote(null);
   };
 
@@ -112,6 +118,7 @@ function Notes() {
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
+      icon: formData.icon || "📝",
     };
 
     try {
@@ -123,7 +130,6 @@ function Notes() {
         showToast("Note added ✅");
       }
 
-      // Clear draft storage
       try {
         localStorage.removeItem(
           `growth_draft_${editingNote ? editingNote._id : "new_note"}`
@@ -132,7 +138,6 @@ function Notes() {
         console.error("Draft clear error:", e);
       }
 
-      // Clear form + close modal + refresh
       resetForm();
       setShowModal(false);
       fetchNotes();
@@ -140,6 +145,57 @@ function Notes() {
       console.error(err);
       showToast("Something went wrong", "error");
     }
+  };
+
+  const handleSummarize = async (note) => {
+    setSummarizingId(note._id);
+    try {
+      const res = await summarizeNote(note._id);
+      if (res.data?.summary) {
+        setActiveSummary({ title: note.title, summary: res.data.summary });
+        showToast("Summary generated ✨");
+      } else {
+        showToast("Failed to generate summary", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error generating summary", "error");
+    } finally {
+      setSummarizingId(null);
+    }
+  };
+
+  const handleExportPDF = (note) => {
+    const cleanText = stripHtml(note.content);
+    const pdfWindow = window.open("", "_blank");
+    if (!pdfWindow) {
+      showToast("Please allow popups to download PDF", "error");
+      return;
+    }
+    pdfWindow.document.write(`
+      <html>
+        <head>
+          <title>${note.title} - GrowthOS Note</title>
+          <style>
+            body { font-family: system-ui, sans-serif; padding: 40px; color: #1c2826; line-height: 1.6; }
+            h1 { color: #2e5b3e; font-size: 24px; border-bottom: 2px solid #2e5b3e; padding-bottom: 8px; }
+            .tags { margin: 12px 0; color: #576561; font-size: 13px; }
+            .content { margin-top: 20px; font-size: 15px; white-space: pre-wrap; }
+            .footer { margin-top: 40px; font-size: 12px; color: #8b9b95; border-top: 1px solid #eee; padding-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <h1>${note.icon || "📝"} ${note.title}</h1>
+          <div class="tags">Tags: ${(note.tags || []).join(", ") || "None"}</div>
+          <div class="content">${cleanText}</div>
+          <div class="footer">Exported from GrowthOS Knowledge Garden</div>
+          <script>
+            window.onload = function() { window.print(); }
+          </script>
+        </body>
+      </html>
+    `);
+    pdfWindow.document.close();
   };
 
   const handleDelete = async (id) => {
@@ -424,8 +480,9 @@ function Notes() {
                             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent/0 via-accent/50 to-accent/0 opacity-0 group-hover:opacity-100 transition-opacity" />
 
                             <div className="flex items-start justify-between mb-3">
-                              <h3 className="font-display text-lg text-cream line-clamp-1 flex-1 mr-2">
-                                {note.title}
+                              <h3 className="font-display text-lg text-cream line-clamp-1 flex-1 mr-2 flex items-center gap-2">
+                                <span>{note.icon || "📝"}</span>
+                                <span>{note.title}</span>
                               </h3>
                               <div
                                 className="flex items-center gap-1"
@@ -445,25 +502,47 @@ function Notes() {
                               {stripHtml(note.content).length > 140 ? "..." : ""}
                             </p>
 
-                            <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                              <div className="flex gap-1.5 flex-wrap">
-                                {note.tags.slice(0, 3).map((t, idx) => (
+                            <div className="flex items-center justify-between pt-3 border-t border-white/5 gap-2">
+                              <div className="flex gap-1 flex-wrap">
+                                {(note.tags || []).slice(0, 2).map((t, idx) => (
                                   <span
                                     key={t}
-                                    className={`text-[10px] px-2 py-1 rounded-full ${getTagColor(t, idx)}`}
+                                    className={`text-[10px] px-2 py-0.5 rounded-full ${getTagColor(t, idx)}`}
                                   >
                                     {t}
                                   </span>
                                 ))}
-                                {note.tags.length > 3 && (
-                                  <span className="text-[10px] px-2 py-1 rounded-full bg-white/5 text-muted">
-                                    +{note.tags.length - 3}
-                                  </span>
-                                )}
                               </div>
 
-                              {/* Card Actions */}
-                              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                              {/* Persistent Card Actions */}
+                              <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                {/* AI Summarize Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSummarize(note);
+                                  }}
+                                  disabled={summarizingId === note._id}
+                                  title="AI Summarize Note"
+                                  className="text-[11px] px-2 py-1 bg-amber/15 hover:bg-amber text-amber hover:text-white rounded-lg transition-all flex items-center gap-1 font-medium shadow-sm"
+                                >
+                                  <span>✨</span>
+                                  <span>{summarizingId === note._id ? "..." : "Summary"}</span>
+                                </button>
+
+                                {/* Export PDF Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleExportPDF(note);
+                                  }}
+                                  title="Export Note to PDF"
+                                  className="text-[11px] px-2 py-1 bg-white/5 hover:bg-white/10 text-muted hover:text-cream rounded-lg transition-all flex items-center gap-1 font-medium"
+                                >
+                                  <span>📄</span>
+                                  <span>PDF</span>
+                                </button>
+
                                 {/* AI Quiz Button */}
                                 <button
                                   onClick={(e) => {
@@ -471,7 +550,7 @@ function Notes() {
                                     setQuizNote(note);
                                   }}
                                   title="Generate AI Quiz from Note"
-                                  className="opacity-0 group-hover:opacity-100 text-[11px] px-2 py-1 bg-accent/15 hover:bg-accent text-accent hover:text-white rounded-lg transition-all flex items-center gap-1 font-medium shadow-sm"
+                                  className="text-[11px] px-2 py-1 bg-accent/15 hover:bg-accent text-accent hover:text-white rounded-lg transition-all flex items-center gap-1 font-medium shadow-sm"
                                 >
                                   <span>🧠</span>
                                   <span>Quiz</span>
@@ -483,7 +562,6 @@ function Notes() {
                                     className="flex items-center gap-1"
                                     onClick={(e) => e.stopPropagation()}
                                   >
-                                    <span className="text-xs text-red-400 mr-1">Delete?</span>
                                     <button
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -491,7 +569,7 @@ function Notes() {
                                       }}
                                       className="text-xs px-2 py-1 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
                                     >
-                                      ✓
+                                      Confirm?
                                     </button>
                                     <button
                                       onClick={(e) => {
@@ -500,7 +578,7 @@ function Notes() {
                                       }}
                                       className="text-xs px-2 py-1 bg-white/5 text-muted rounded-lg hover:bg-white/10 transition-colors"
                                     >
-                                      ✗
+                                      ✕
                                     </button>
                                   </div>
                                 ) : (
@@ -509,11 +587,11 @@ function Notes() {
                                       e.stopPropagation();
                                       handleDelete(note._id);
                                     }}
-                                    className="opacity-0 group-hover:opacity-100 text-muted hover:text-red-400 transition-all p-1.5 rounded-lg hover:bg-red-500/10"
+                                    className="text-muted hover:text-red-400 transition-all p-1.5 rounded-lg hover:bg-red-500/10"
                                     title="Delete Note"
                                   >
                                     <svg
-                                      className="w-4 h-4"
+                                      className="w-3.5 h-3.5"
                                       fill="none"
                                       stroke="currentColor"
                                       viewBox="0 0 24 24"
@@ -529,7 +607,6 @@ function Notes() {
                                 )}
                               </div>
                             </div>
-
                           </motion.div>
                         );
                       })}
@@ -541,7 +618,7 @@ function Notes() {
           )}
         </div>
 
-        {/* Modal */}
+        {/* Edit / New Note Modal */}
         <AnimatePresence>
           {showModal && (
             <motion.div
@@ -585,6 +662,27 @@ function Notes() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                  {/* Emoji selection */}
+                  <div>
+                    <label className="text-xs text-muted mb-1.5 block">Note Icon / Emoji</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {EMOJI_OPTIONS.map((emo) => (
+                        <button
+                          key={emo}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, icon: emo })}
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg transition-all ${
+                            formData.icon === emo
+                              ? "bg-accent text-white scale-110 ring-2 ring-accent/50"
+                              : "bg-white/5 hover:bg-white/10 text-cream"
+                          }`}
+                        >
+                          {emo}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div>
                     <label className="text-xs text-muted mb-1.5 block">
                       Title
@@ -645,6 +743,51 @@ function Notes() {
                     </button>
                   </div>
                 </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* AI Summary Modal */}
+        <AnimatePresence>
+          {activeSummary && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center px-4 z-50"
+              onClick={() => setActiveSummary(null)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-ink-light border border-white/10 rounded-2xl p-6 w-full max-w-lg shadow-2xl"
+              >
+                <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+                  <h3 className="font-display text-lg text-cream flex items-center gap-2">
+                    <span>✨</span>
+                    <span>AI Key Takeaways: {activeSummary.title}</span>
+                  </h3>
+                  <button
+                    onClick={() => setActiveSummary(null)}
+                    className="text-muted hover:text-cream text-lg"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="text-sm text-cream/90 leading-relaxed whitespace-pre-wrap bg-ink/50 p-4 rounded-xl border border-white/5">
+                  {activeSummary.summary}
+                </div>
+                <div className="mt-5 text-right">
+                  <button
+                    onClick={() => setActiveSummary(null)}
+                    className="px-5 py-2 bg-accent hover:bg-accent-light text-white rounded-xl text-xs font-medium transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
               </motion.div>
             </motion.div>
           )}

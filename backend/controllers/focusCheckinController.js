@@ -3,13 +3,30 @@ const FocusCheckin = require("../models/FocusCheckin");
 // POST /api/focus-checkin - Naya check-in create
 exports.createCheckin = async (req, res) => {
   try {
-    const { activityType, focusRating } = req.body;
-    const today = new Date().toISOString().split("T")[0];
+    const {
+      activityType,
+      emoji,
+      focusRating,
+      duration = 25,
+      startTime,
+      endTime,
+      notes = "",
+      goalTitle = "",
+      date,
+    } = req.body;
+
+    const today = date || new Date().toISOString().split("T")[0];
 
     const checkin = await FocusCheckin.create({
       userId: req.user.id,
       activityType,
-      focusRating,
+      emoji: emoji || "⚡",
+      focusRating: Number(focusRating),
+      duration: Number(duration),
+      startTime: startTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      endTime: endTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      notes,
+      goalTitle,
       date: today,
     });
 
@@ -18,6 +35,7 @@ exports.createCheckin = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // GET /api/focus-checkin/today - Aaj ke check-ins
 exports.getTodayCheckins = async (req, res) => {
@@ -62,25 +80,55 @@ exports.getDailySummary = async (req, res) => {
 
     const total = checkins.length;
     if (total === 0)
-      return res.json({ message: "No check-ins today", total: 0 });
+      return res.json({
+        message: "No check-ins today",
+        total: 0,
+        totalFocusMinutes: 0,
+        avgFocus: 0,
+        completedSessions: 0,
+        longestSession: 0,
+        topActivity: "None",
+        activityBreakdown: {},
+        insights: ["Start your first focus session today!"],
+      });
 
     const activityCounts = {};
+    let totalFocusMinutes = 0;
+    let longestSession = 0;
+
     checkins.forEach((c) => {
       activityCounts[c.activityType] =
         (activityCounts[c.activityType] || 0) + 1;
+      const dur = c.duration || 25;
+      totalFocusMinutes += dur;
+      if (dur > longestSession) longestSession = dur;
     });
 
-    const avgFocus = (
-      checkins.reduce((sum, c) => sum + c.focusRating, 0) / total
-    ).toFixed(1);
-    const productiveCount =
-      (activityCounts["Studying"] || 0) + (activityCounts["Coding"] || 0);
+    let topActivity = "None";
+    let maxCount = 0;
+    Object.entries(activityCounts).forEach(([act, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        topActivity = act;
+      }
+    });
+
+    const avgFocus = parseFloat(
+      (checkins.reduce((sum, c) => sum + c.focusRating, 0) / total).toFixed(1)
+    );
+
     const distractedCount = activityCounts["Distracted"] || 0;
+    const breakCount = activityCounts["Break"] || 0;
+    const productiveCount = total - distractedCount - breakCount;
 
     res.json({
       total,
       avgFocus,
-      productivePercent: Math.round((productiveCount / total) * 100),
+      totalFocusMinutes,
+      completedSessions: total - breakCount,
+      longestSession,
+      topActivity,
+      productivePercent: Math.max(0, Math.round((productiveCount / total) * 100)),
       distractedCount,
       activityBreakdown: activityCounts,
       insights: generateInsights(
@@ -94,6 +142,7 @@ exports.getDailySummary = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 function generateInsights(checkins, total, productive, distracted) {
   const insights = [];

@@ -1,8 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  // baseURL: "http://localhost:5000/api", // ✅ Local backend
-  baseURL: "https://growth-os-h7hi.onrender.com/api", // ✅ Render URL
+  baseURL: import.meta.env.VITE_API_URL || "https://growth-os-h7hi.onrender.com/api",
 });
 
 API.interceptors.request.use((req) => {

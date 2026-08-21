@@ -170,3 +170,67 @@ Rules:
     });
   }
 };
+
+// POST /api/ai/summarize/:noteId
+exports.summarizeNote = async (req, res) => {
+  try {
+    const { noteId } = req.params;
+    const userId = req.user.id;
+
+    const note = await Note.findOne({ _id: noteId, userId });
+    if (!note) {
+      return res.status(404).json({ message: "Note not found" });
+    }
+
+    const cleanContent = stripHtml(note.content);
+    if (!cleanContent || cleanContent.length < 15) {
+      return res.status(400).json({
+        message: "Note content is too short to generate a summary.",
+      });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      // Fallback local summary if no Gemini API key configured
+      const summaryText = `Key Takeaways for ${note.title}:\n- ` + cleanContent.split(".").slice(0, 3).join(".\n- ") + ".";
+      return res.json({ success: true, summary: summaryText });
+    }
+
+    const prompt = `You are a concise executive assistant. Provide a clean, bulleted summary (3-5 key takeaways) of the following note content:
+Title: "${note.title}"
+Content:
+"""
+${cleanContent}
+"""`;
+
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+
+    const geminiRes = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    });
+
+    if (!geminiRes.ok) {
+      const summaryText = `Key Takeaways for ${note.title}:\n- ` + cleanContent.split(".").slice(0, 3).join(".\n- ") + ".";
+      return res.json({ success: true, summary: summaryText });
+    }
+
+    const geminiData = await geminiRes.json();
+    const summary = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "No summary generated.";
+
+    res.json({
+      success: true,
+      noteId: note._id,
+      summary,
+    });
+  } catch (err) {
+    console.error("Summary generation error:", err);
+    res.status(500).json({
+      message: "Internal server error during summary generation",
+      error: err.message,
+    });
+  }
+};

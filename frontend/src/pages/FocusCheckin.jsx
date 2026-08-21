@@ -30,6 +30,8 @@ function Toast({ message, type, onClose }) {
   );
 }
 
+import { getCustomActivities, addCustomActivity } from "../api/auth";
+
 function FocusCheckin() {
   const [activityType, setActivityType] = useState("Studying");
   const [focusRating, setFocusRating] = useState(3);
@@ -39,12 +41,51 @@ function FocusCheckin() {
   const [summary, setSummary] = useState(null);
   const [toast, setToast] = useState(null);
 
-  const activities = [
-    { value: "Studying", label: "📚 Studying" },
-    { value: "Coding", label: "💻 Coding" },
-    { value: "Distracted", label: "😵 Distracted" },
-    { value: "Break", label: "☕ Break" },
-    { value: "Other", label: "📝 Other" },
+  const [customActivitiesList, setCustomActivitiesList] = useState([]);
+  const [showAddActivityModal, setShowAddActivityModal] = useState(false);
+  const [newActName, setNewActName] = useState("");
+  const [newActEmoji, setNewActEmoji] = useState("⚡");
+
+  const defaultActivities = [
+    { name: "Studying", emoji: "📚" },
+    { name: "Coding", emoji: "💻" },
+    { name: "Distracted", emoji: "😵" },
+    { name: "Break", emoji: "☕" },
+    { name: "Other", emoji: "📝" },
+  ];
+
+  useEffect(() => {
+    loadTodayData();
+    loadCustomActivities();
+  }, []);
+
+  const loadCustomActivities = async () => {
+    try {
+      const res = await getCustomActivities();
+      setCustomActivitiesList(res.data || []);
+    } catch (e) {
+      console.error("Custom activities load error", e);
+    }
+  };
+
+  const handleCreateCustomActivity = async (e) => {
+    e.preventDefault();
+    if (!newActName.trim()) return;
+    try {
+      const res = await addCustomActivity({ name: newActName.trim(), emoji: newActEmoji });
+      setCustomActivitiesList(res.data || []);
+      setActivityType(newActName.trim());
+      setNewActName("");
+      setShowAddActivityModal(false);
+      showToast("Custom activity added! 🌱");
+    } catch (err) {
+      showToast("Failed to add custom activity", "error");
+    }
+  };
+
+  const allActivities = [
+    ...defaultActivities,
+    ...customActivitiesList.map((ca) => ({ name: ca.name, emoji: ca.emoji })),
   ];
 
   useEffect(() => {
@@ -135,22 +176,32 @@ function FocusCheckin() {
                 </h2>
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div>
-                    <label className="block text-xs text-muted mb-2.5">
-                      Activity Category
-                    </label>
+                    <div className="flex items-center justify-between mb-2.5">
+                      <label className="text-xs text-muted block">
+                        Activity Category
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddActivityModal(true)}
+                        className="text-[11px] text-accent hover:underline flex items-center gap-1 font-medium"
+                      >
+                        <span>+ Custom Activity</span>
+                      </button>
+                    </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {activities.map((a) => (
+                      {allActivities.map((a) => (
                         <button
-                          key={a.value}
+                          key={a.name}
                           type="button"
-                          onClick={() => setActivityType(a.value)}
-                          className={`p-2.5 rounded-xl border text-left text-xs transition-all ${
-                            activityType === a.value
-                              ? "border-accent bg-accent/15 text-cream font-medium"
+                          onClick={() => setActivityType(a.name)}
+                          className={`p-2.5 rounded-xl border text-left text-xs transition-all flex items-center gap-1.5 ${
+                            activityType === a.name
+                              ? "border-accent bg-accent/15 text-cream font-medium shadow-sm"
                               : "border-white/10 text-muted hover:border-white/20 hover:text-cream"
                           }`}
                         >
-                          {a.label}
+                          <span>{a.emoji}</span>
+                          <span>{a.name}</span>
                         </button>
                       ))}
                     </div>
@@ -312,6 +363,87 @@ function FocusCheckin() {
             </div>
           </div>
         </motion.div>
+
+        {/* Add Custom Activity Modal */}
+        <AnimatePresence>
+          {showAddActivityModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center px-4 z-50"
+              onClick={() => setShowAddActivityModal(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-ink-light border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+              >
+                <div className="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+                  <h3 className="font-display text-lg text-cream">Add Custom Activity</h3>
+                  <button
+                    onClick={() => setShowAddActivityModal(false)}
+                    className="text-muted hover:text-cream"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleCreateCustomActivity} className="space-y-4">
+                  <div>
+                    <label className="text-xs text-muted mb-1.5 block">Activity Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. System Design, Fitness"
+                      value={newActName}
+                      onChange={(e) => setNewActName(e.target.value)}
+                      required
+                      className="w-full bg-ink border border-white/10 rounded-xl px-4 py-2.5 text-cream text-xs focus:outline-none focus:border-accent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-muted mb-1.5 block">Pick an Emoji</label>
+                    <div className="flex gap-2 flex-wrap">
+                      {["⚡", "🎨", "🧪", "🚀", "📊", "🎯", "📖", "🎧", "🏋️", "💡", "🛠️"].map((emo) => (
+                        <button
+                          key={emo}
+                          type="button"
+                          onClick={() => setNewActEmoji(emo)}
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center text-lg transition-all ${
+                            newActEmoji === emo
+                              ? "bg-accent text-white scale-110 ring-2 ring-accent/50"
+                              : "bg-white/5 hover:bg-white/10"
+                          }`}
+                        >
+                          {emo}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      type="submit"
+                      className="flex-1 bg-accent hover:bg-accent-light text-white text-xs font-medium rounded-xl py-2.5 transition-all shadow-md"
+                    >
+                      Create Activity
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddActivityModal(false)}
+                      className="px-4 text-xs text-muted hover:text-cream bg-white/5 rounded-xl"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

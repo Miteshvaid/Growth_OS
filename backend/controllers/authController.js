@@ -203,5 +203,86 @@ const changePassword = async (req, res) => {
   }
 };
 
+// ✅ CUSTOM ACTIVITIES
+const getCustomActivities = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    res.json(user.customActivities || []);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const addCustomActivity = async (req, res) => {
+  try {
+    const { name, emoji } = req.body;
+    if (!name || !emoji) {
+      return res.status(400).json({ message: "Name and emoji are required" });
+    }
+    const user = await User.findById(req.user._id);
+    user.customActivities.push({ name, emoji });
+    await user.save();
+    res.status(201).json(user.customActivities);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ✅ NOTIFICATION EMAIL & VERIFICATION
+const updateNotificationEmail = async (req, res) => {
+  try {
+    const { notificationEmail } = req.body;
+    const user = await User.findById(req.user._id);
+    user.notificationEmail = notificationEmail;
+    user.emailVerified = true; // Auto verify for simplicity
+    await user.save();
+    res.json({
+      message: "Notification email updated and verified",
+      notificationEmail: user.notificationEmail,
+      emailVerified: user.emailVerified,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// ✅ SEND TEST REPORT
+const sendTestReport = async (req, res) => {
+  try {
+    const { sendProductivityReport } = require("../emailService");
+    const user = await User.findById(req.user._id);
+    const targetEmail = user.notificationEmail || user.email;
+
+    const summary = {
+      totalCheckins: 5,
+      avgFocus: 4.2,
+      completedTasks: 8,
+      currentStreak: user.currentStreak || 3,
+    };
+
+    await sendProductivityReport({
+      to: targetEmail,
+      userName: user.name,
+      summary,
+      period: "Weekly",
+    });
+
+    res.json({ success: true, message: `Test report sent to ${targetEmail}` });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 // ✅ EXPORTS
-module.exports = { register, login, getProfile, updateProfile, changePassword };
+module.exports = {
+  register,
+  login,
+  getProfile,
+  updateProfile,
+  changePassword,
+  getCustomActivities,
+  addCustomActivity,
+  updateNotificationEmail,
+  sendTestReport,
+};
+

@@ -16,6 +16,20 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    customActivities: [
+      {
+        name: { type: String, required: true },
+        emoji: { type: String, required: true },
+      },
+    ],
+    notificationEmail: {
+      type: String,
+      default: "",
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );

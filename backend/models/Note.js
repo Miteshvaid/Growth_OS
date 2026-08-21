@@ -10,6 +10,7 @@ const noteSchema = new mongoose.Schema(
     title: { type: String, required: true },
     content: { type: String, required: true },
     tags: [{ type: String }],
+    icon: { type: String, default: "📝" },
     editCount: { type: Number, default: 0 },
   },
   { timestamps: true },

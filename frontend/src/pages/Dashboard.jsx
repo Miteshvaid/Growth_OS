@@ -100,64 +100,111 @@ function Dashboard() {
 
   if (!showApp) {
     return (
-      <div className="min-h-screen bg-ink text-cream relative overflow-hidden">
+      <div className="min-h-screen bg-ink text-cream relative overflow-hidden flex flex-col justify-between">
         <div className="bg-glow-purple -top-32 -left-32 opacity-40 animate-pulse" />
         <div className="bg-glow-green -bottom-32 -right-32 opacity-30" />
 
         <Navbar />
-        <div className="max-w-4xl mx-auto px-6 py-20 md:py-32 text-center relative z-10">
+
+        {/* Hero Section */}
+        <div className="max-w-5xl mx-auto px-6 pt-16 pb-12 text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 25, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-accent to-accent-light flex items-center justify-center text-white text-2xl font-bold mx-auto mb-8 shadow-xl shadow-accent/30 ring-1 ring-white/20">
-              G
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-accent to-accent-light flex items-center justify-center text-white text-2xl font-bold mx-auto mb-6 shadow-xl shadow-accent/30 ring-1 ring-white/20">
+              🌱
             </div>
 
-            <h1 className="font-display text-5xl md:text-6xl text-cream mb-4 leading-tight tracking-tight">
+            <h1 className="font-display text-4xl md:text-6xl text-cream mb-4 leading-tight tracking-tight">
               {greeting()},{" "}
-              <span className="bg-gradient-to-r from-accent-light via-purple-300 to-sprout-light bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-accent-light via-sprout to-amber bg-clip-text text-transparent">
                 {user?.name || "Friend"}
               </span>
             </h1>
 
-            <p className="text-muted text-lg md:text-xl max-w-lg mx-auto mb-10 leading-relaxed font-light">
-              Your personal space to grow. Track focus sessions, capture
-              learnings, and watch your progress bloom.
+            <p className="text-muted text-base md:text-lg max-w-xl mx-auto mb-8 leading-relaxed font-light">
+              GrowthOS is your all-in-one productivity garden. Run focused Pomodoro sessions, cultivate notes, manage tasks, and visualize your daily progress.
             </p>
 
             <motion.button
-              whileHover={{ scale: 1.04, boxShadow: "0 20px 40px -15px rgba(124, 58, 237, 0.4)" }}
+              whileHover={{ scale: 1.04, boxShadow: "0 20px 40px -15px rgba(46, 91, 62, 0.4)" }}
               whileTap={{ scale: 0.97 }}
               onClick={() => setShowApp(true)}
-              className="bg-accent hover:bg-accent-light text-white font-medium text-lg px-10 py-4 rounded-2xl transition-all shadow-lg shadow-accent/25 flex items-center gap-2 mx-auto"
+              className="bg-accent hover:bg-accent-light text-white font-medium text-base px-8 py-3.5 rounded-2xl transition-all shadow-lg shadow-accent/25 flex items-center gap-2 mx-auto"
             >
-              <span>Get Started</span>
-              <span className="text-xl">→</span>
+              <span>Enter Workspace</span>
+              <span className="text-lg">→</span>
             </motion.button>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="flex flex-wrap items-center justify-center gap-8 mt-16 text-sm text-muted"
-            >
-              <div className="flex items-center gap-2 bg-white/[0.03] px-3.5 py-1.5 rounded-full border border-white/5">
-                <span className="text-emerald-400 text-xs">●</span>
-                <span>Track focus sessions</span>
-              </div>
-              <div className="flex items-center gap-2 bg-white/[0.03] px-3.5 py-1.5 rounded-full border border-white/5">
-                <span className="text-accent text-xs">●</span>
-                <span>Build knowledge garden</span>
-              </div>
-              <div className="flex items-center gap-2 bg-white/[0.03] px-3.5 py-1.5 rounded-full border border-white/5">
-                <span className="text-amber-400 text-xs">●</span>
-                <span>Visualize growth</span>
-              </div>
-            </motion.div>
           </motion.div>
         </div>
+
+        {/* Section 2: What is GrowthOS & Feature Blocks */}
+        <div className="max-w-5xl mx-auto px-6 py-12 relative z-10 border-t border-white/5">
+          <div className="text-center mb-10">
+            <h2 className="font-display text-2xl md:text-3xl text-cream mb-2">Everything You Need to Bloom</h2>
+            <p className="text-muted text-sm max-w-md mx-auto">Designed for intentional deep work and continuous self-improvement.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="bg-ink-light border border-white/5 rounded-2xl p-6 shadow-sm">
+              <div className="text-3xl mb-3">🎯</div>
+              <h3 className="font-display text-lg text-cream mb-2">Pomodoro & Focus</h3>
+              <p className="text-muted text-xs leading-relaxed">
+                Run customized focus blocks with custom duration timer, sound chimes, and browser notifications that auto-log your focus score.
+              </p>
+            </div>
+
+            <div className="bg-ink-light border border-white/5 rounded-2xl p-6 shadow-sm">
+              <div className="text-3xl mb-3">🌿</div>
+              <h3 className="font-display text-lg text-cream mb-2">Knowledge Garden</h3>
+              <p className="text-muted text-xs leading-relaxed">
+                Organize thoughts with custom note icons, AI summaries, automated quizzes, and one-click PDF exports.
+              </p>
+            </div>
+
+            <div className="bg-ink-light border border-white/5 rounded-2xl p-6 shadow-sm">
+              <div className="text-3xl mb-3">📈</div>
+              <h3 className="font-display text-lg text-cream mb-2">Rich Analytics</h3>
+              <p className="text-muted text-xs leading-relaxed">
+                Track your streak, focus ratings, task completion rates, activity distribution, and historical heatmap.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: How It Works */}
+        <div className="max-w-5xl mx-auto px-6 py-12 relative z-10 border-t border-white/5">
+          <div className="text-center mb-10">
+            <h2 className="font-display text-2xl text-cream mb-2">3 Steps to Daily Growth</h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6 text-center">
+            <div className="p-4">
+              <div className="w-10 h-10 rounded-full bg-accent/20 text-accent font-bold flex items-center justify-center mx-auto mb-3">1</div>
+              <h4 className="font-medium text-cream text-sm mb-1">Set Your Focus Session</h4>
+              <p className="text-muted text-xs">Choose custom focus & break minutes, pick an activity, and launch the timer.</p>
+            </div>
+
+            <div className="p-4">
+              <div className="w-10 h-10 rounded-full bg-accent/20 text-accent font-bold flex items-center justify-center mx-auto mb-3">2</div>
+              <h4 className="font-medium text-cream text-sm mb-1">Plant Your Knowledge</h4>
+              <p className="text-muted text-xs">Jot down notes, attach custom emojis, generate AI quizzes and summaries.</p>
+            </div>
+
+            <div className="p-4">
+              <div className="w-10 h-10 rounded-full bg-accent/20 text-accent font-bold flex items-center justify-center mx-auto mb-3">3</div>
+              <h4 className="font-medium text-cream text-sm mb-1">Watch Your Garden Grow</h4>
+              <p className="text-muted text-xs">Review daily summaries, build focus streaks, and export reports anytime.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <footer className="border-t border-white/5 py-6 text-center text-xs text-muted">
+          <p>© {new Date().getFullYear()} GrowthOS — Cultivate Your Best Self 🌱</p>
+        </footer>
       </div>
     );
   }

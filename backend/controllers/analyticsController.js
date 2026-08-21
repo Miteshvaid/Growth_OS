@@ -35,15 +35,18 @@ exports.getAnalytics = async (req, res) => {
       Task.find({ userId }),
     ]);
 
-    // 1. FOCUS TREND (date-wise avg focus + count)
+    // 1. FOCUS TREND (date-wise avg focus + count + activities)
     const focusMap = new Map();
     checkins.forEach((c) => {
       if (!focusMap.has(c.date)) {
-        focusMap.set(c.date, { total: 0, count: 0 });
+        focusMap.set(c.date, { total: 0, count: 0, activities: [] });
       }
       const entry = focusMap.get(c.date);
       entry.total += c.focusRating;
       entry.count += 1;
+      if (c.activityType && !entry.activities.includes(c.activityType)) {
+        entry.activities.push(c.activityType);
+      }
     });
 
     const focusTrend = [];
@@ -52,6 +55,7 @@ exports.getAnalytics = async (req, res) => {
         date,
         avgFocus: parseFloat((val.total / val.count).toFixed(1)),
         count: val.count,
+        activities: val.activities,
       });
     });
     focusTrend.sort((a, b) => a.date.localeCompare(b.date));
@@ -125,8 +129,23 @@ exports.getAnalytics = async (req, res) => {
     });
     taskTrend.sort((a, b) => a.date.localeCompare(b.date));
 
-    // 5. SUMMARY
+    // 5. DETAILED HISTORY LIST FOR TIMELINE & HEATMAP LOOKUP
+    const sessionHistory = checkins.map((c) => ({
+      id: c._id,
+      activityType: c.activityType,
+      emoji: c.emoji || "⚡",
+      date: c.date,
+      startTime: c.startTime || new Date(c.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      endTime: c.endTime || "",
+      duration: c.duration || 25,
+      focusRating: c.focusRating,
+      notes: c.notes || "",
+      goalTitle: c.goalTitle || "",
+    }));
+
+    // 6. SUMMARY
     const totalCheckins = checkins.length;
+    const totalFocusMinutes = checkins.reduce((sum, c) => sum + (c.duration || 25), 0);
     const avgFocus =
       checkins.length > 0
         ? parseFloat(
@@ -142,6 +161,7 @@ exports.getAnalytics = async (req, res) => {
       period: `${days} days`,
       summary: {
         totalCheckins,
+        totalFocusMinutes,
         totalTasks,
         completedTasks,
         completionRate,
@@ -152,6 +172,7 @@ exports.getAnalytics = async (req, res) => {
       },
       trends: { focus: focusTrend, tasks: taskTrend },
       breakdown: { activities: activityCounts },
+      sessionHistory,
     });
   } catch (error) {
     console.error("Analytics Error:", error);
@@ -162,6 +183,7 @@ exports.getAnalytics = async (req, res) => {
     });
   }
 };
+
 
 exports.getWeeklySummary = async (req, res) => {
   try {

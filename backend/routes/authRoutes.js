@@ -7,6 +7,9 @@ const {
   getProfile,
   updateProfile,
   changePassword,
+  getCustomActivities,
+  addCustomActivity,
+  updateNotificationEmail,
 } = require("../controllers/authController");
 
 router.post("/register", register);
@@ -14,4 +17,8 @@ router.post("/login", login);
 router.get("/profile", protect, getProfile);
 router.put("/profile", protect, updateProfile);
 router.put("/change-password", protect, changePassword);
+router.get("/custom-activities", protect, getCustomActivities);
+router.post("/custom-activities", protect, addCustomActivity);
+router.put("/notification-email", protect, updateNotificationEmail);
+
 module.exports = router;

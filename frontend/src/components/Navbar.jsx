@@ -524,6 +524,42 @@ function Navbar() {
               </div>
 
               <div className="space-y-4">
+                {/* Email Connect & Verification */}
+                <div className="p-4 bg-ink rounded-xl border border-white/5 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">✉️</span>
+                    <div>
+                      <p className="text-cream text-sm font-medium">Notification & Report Email</p>
+                      <p className="text-muted text-xs">Connect email for weekly reports & alerts</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      placeholder="user@example.com"
+                      defaultValue={user?.email}
+                      id="notif-email-input"
+                      className="flex-1 bg-ink-light border border-white/10 rounded-lg px-3 py-1.5 text-xs text-cream focus:outline-none focus:border-accent"
+                    />
+                    <button
+                      onClick={async () => {
+                        const inputEl = document.getElementById("notif-email-input");
+                        if (!inputEl || !inputEl.value) return;
+                        try {
+                          const { updateNotificationEmail } = await import("../api/auth");
+                          await updateNotificationEmail({ notificationEmail: inputEl.value });
+                          alert("Email connected & verified! ✅");
+                        } catch (err) {
+                          alert("Failed to update notification email");
+                        }
+                      }}
+                      className="bg-accent hover:bg-accent-light text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      Connect & Verify
+                    </button>
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between p-3 bg-ink rounded-xl border border-white/5">
                   <div className="flex items-center gap-3">
                     <span className="text-lg">
