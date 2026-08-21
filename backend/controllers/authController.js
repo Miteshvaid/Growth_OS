@@ -282,26 +282,33 @@ const updateNotificationEmail = async (req, res) => {
 const sendTestReport = async (req, res) => {
   try {
     const { sendProductivityReport } = require("../emailService");
-    const user = await User.findById(req.user._id);
+    const userId = req.user._id || req.user.id;
+    const user = await User.findById(userId);
     const targetEmail = user.notificationEmail || user.email;
+
+    console.log(`[TEST REPORT] Dispatching email to: ${targetEmail}`);
 
     const summary = {
       totalCheckins: 5,
       avgFocus: 4.2,
       completedTasks: 8,
+      totalTasks: 10,
       currentStreak: user.currentStreak || 3,
     };
 
-    await sendProductivityReport({
+    const mailResult = await sendProductivityReport({
       to: targetEmail,
-      userName: user.name,
+      userName: user.name || "User",
       summary,
-      period: "Weekly",
+      period: "Instant Test",
     });
 
-    res.json({ success: true, message: `Test report sent to ${targetEmail}` });
+    console.log(`[TEST REPORT] Email result:`, mailResult?.response || mailResult?.messageId);
+
+    return res.json({ success: true, message: `Test report sent to ${targetEmail}!` });
   } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
+    console.error("[TEST REPORT ERROR]:", error);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 
