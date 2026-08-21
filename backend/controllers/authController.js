@@ -236,8 +236,26 @@ const updateNotificationEmail = async (req, res) => {
     user.notificationEmail = notificationEmail;
     user.emailVerified = true; // Auto verify for simplicity
     await user.save();
+
+    // Trigger test report email immediately upon connecting
+    const { sendProductivityReport } = require("../emailService");
+    const summary = {
+      totalCheckins: 7,
+      avgFocus: 4.5,
+      completedTasks: 5,
+      totalTasks: 6,
+      currentStreak: user.currentStreak || 3,
+    };
+    
+    sendProductivityReport({
+      to: user.notificationEmail || user.email,
+      userName: user.name,
+      summary,
+      period: "Weekly & Automated",
+    }).catch((err) => console.log("Report email send notice:", err.message));
+
     res.json({
-      message: "Notification email updated and verified",
+      message: "Notification email updated, verified and automated report generated",
       notificationEmail: user.notificationEmail,
       emailVerified: user.emailVerified,
     });

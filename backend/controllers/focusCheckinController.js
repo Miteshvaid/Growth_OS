@@ -15,7 +15,11 @@ exports.createCheckin = async (req, res) => {
       date,
     } = req.body;
 
-    const today = date || new Date().toISOString().split("T")[0];
+    const now = new Date();
+    const localDateStr = now.toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" }); // YYYY-MM-DD
+    const localTimeStr = now.toLocaleTimeString("en-US", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true });
+
+    const today = date || localDateStr;
 
     const checkin = await FocusCheckin.create({
       userId: req.user.id,
@@ -23,8 +27,8 @@ exports.createCheckin = async (req, res) => {
       emoji: emoji || "⚡",
       focusRating: Number(focusRating),
       duration: Number(duration),
-      startTime: startTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      endTime: endTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      startTime: startTime || localTimeStr,
+      endTime: endTime || localTimeStr,
       notes,
       goalTitle,
       date: today,
