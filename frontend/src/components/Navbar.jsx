@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../context/ThemeContext";
-import { getProfile, updateNotificationEmail, sendTestReport } from "../api/auth";
+import { getProfile, updateNotificationEmail, sendTestReport, updateProfile } from "../api/auth";
 
 function Navbar() {
   const { theme, toggleTheme } = useTheme();
@@ -32,8 +32,12 @@ function Navbar() {
     setStatsLoading(true);
     try {
       const res = await getProfile();
-      if (res.data && res.data.stats) {
-        setProfileStats(res.data.stats);
+      if (res.data) {
+        if (res.data.stats) setProfileStats(res.data.stats);
+        if (res.data.profileImage) {
+          setProfileImage(res.data.profileImage);
+          localStorage.setItem("profileImage", res.data.profileImage);
+        }
       }
     } catch (err) {
       console.error("Failed to fetch profile stats:", err);
@@ -42,6 +46,10 @@ function Navbar() {
       setStatsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchProfileStats();
+  }, []);
 
   useEffect(() => {
     if (showProfileModal) fetchProfileStats();
@@ -64,7 +72,7 @@ function Navbar() {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem("profileImage");
+    const saved = user?.profileImage || localStorage.getItem("profileImage");
     if (saved) setProfileImage(saved);
   }, []);
 
@@ -77,9 +85,17 @@ function Navbar() {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result);
-        localStorage.setItem("profileImage", reader.result);
+      reader.onloadend = async () => {
+        const base64Image = reader.result;
+        setProfileImage(base64Image);
+        localStorage.setItem("profileImage", base64Image);
+        try {
+          await updateProfile({ profileImage: base64Image });
+          const updatedUser = { ...user, profileImage: base64Image };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+        } catch (err) {
+          console.error("Failed to sync profile image to database:", err);
+        }
       };
       reader.readAsDataURL(file);
     }

@@ -101,6 +101,8 @@ const login = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      notificationEmail: user.notificationEmail || "",
+      profileImage: user.profileImage || "",
       token: generateToken(user._id),
     });
   } catch (err) {
@@ -127,6 +129,8 @@ const getProfile = async (req, res) => {
       _id: req.user._id,
       name: req.user.name,
       email: req.user.email,
+      notificationEmail: req.user.notificationEmail || "",
+      profileImage: req.user.profileImage || "",
       createdAt: req.user.createdAt,
       stats: {
         notes: notesCount,
@@ -148,8 +152,9 @@ const updateProfile = async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const { name, email } = req.body;
+    const { name, email, profileImage } = req.body;
     if (name) user.name = name;
+    if (profileImage !== undefined) user.profileImage = profileImage;
     if (email && email !== user.email) {
       const emailExists = await User.findOne({ email });
       if (emailExists) {
@@ -164,6 +169,8 @@ const updateProfile = async (req, res) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      notificationEmail: user.notificationEmail || "",
+      profileImage: user.profileImage || "",
       message: "Profile updated successfully",
     });
   } catch (error) {
