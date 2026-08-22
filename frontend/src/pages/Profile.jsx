@@ -61,6 +61,10 @@ export default function Profile() {
           name: res.data.name || "",
           email: res.data.email || "",
         });
+        if (res.data.profileImage) {
+          setProfileImage(res.data.profileImage);
+          localStorage.setItem("profileImage", res.data.profileImage);
+        }
         if (res.data.stats) {
           setStats(res.data.stats);
         }
@@ -76,15 +80,42 @@ export default function Profile() {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error("Image size must be less than 2MB");
-        return;
-      }
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result);
-        localStorage.setItem("profileImage", reader.result);
-        toast.success("Profile avatar updated!");
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const size = Math.min(img.width, img.height);
+          canvas.width = 250;
+          canvas.height = 250;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(
+            img,
+            (img.width - size) / 2,
+            (img.height - size) / 2,
+            size,
+            size,
+            0,
+            0,
+            250,
+            250
+          );
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.85);
+          setProfileImage(compressedBase64);
+          localStorage.setItem("profileImage", compressedBase64);
+
+          updateProfile({ profileImage: compressedBase64 })
+            .then(() => {
+              const existingUser = JSON.parse(localStorage.getItem("user") || "{}");
+              localStorage.setItem("user", JSON.stringify({ ...existingUser, profileImage: compressedBase64 }));
+              toast.success("Profile avatar updated & saved to account!");
+            })
+            .catch((err) => {
+              console.error("Failed to sync DP to DB:", err);
+              toast.error("Failed to sync avatar to database");
+            });
+        };
+        img.src = event.target.result;
       };
       reader.readAsDataURL(file);
     }
