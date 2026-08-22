@@ -85,17 +85,37 @@ function Navbar() {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64Image = reader.result;
-        setProfileImage(base64Image);
-        localStorage.setItem("profileImage", base64Image);
-        try {
-          await updateProfile({ profileImage: base64Image });
-          const updatedUser = { ...user, profileImage: base64Image };
-          localStorage.setItem("user", JSON.stringify(updatedUser));
-        } catch (err) {
-          console.error("Failed to sync profile image to database:", err);
-        }
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const size = Math.min(img.width, img.height);
+          canvas.width = 250;
+          canvas.height = 250;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(
+            img,
+            (img.width - size) / 2,
+            (img.height - size) / 2,
+            size,
+            size,
+            0,
+            0,
+            250,
+            250
+          );
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.85);
+          setProfileImage(compressedBase64);
+          localStorage.setItem("profileImage", compressedBase64);
+
+          updateProfile({ profileImage: compressedBase64 })
+            .then(() => {
+              const updatedUser = { ...user, profileImage: compressedBase64 };
+              localStorage.setItem("user", JSON.stringify(updatedUser));
+            })
+            .catch((err) => console.error("Failed to sync DP to MongoDB:", err));
+        };
+        img.src = event.target.result;
       };
       reader.readAsDataURL(file);
     }
