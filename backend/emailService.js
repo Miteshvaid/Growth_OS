@@ -5,6 +5,11 @@ try {
   console.log("[EMAIL SERVICE] Notice: nodemailer package not installed yet.");
 }
 
+const dns = require("dns");
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder("ipv4first");
+}
+
 // Create test or SMTP transporter
 const createTransporter = () => {
   if (nodemailer && process.env.SMTP_USER && process.env.SMTP_PASS) {
@@ -17,6 +22,7 @@ const createTransporter = () => {
         pass: process.env.SMTP_PASS,
       },
       connectionTimeout: 10000,
+      family: 4, // Force IPv4 to prevent ENETUNREACH on Render/cloud servers
     });
   }
 
