@@ -7,29 +7,19 @@ try {
 
 // Create test or SMTP transporter
 const createTransporter = () => {
-  if (nodemailer && process.env.SMTP_HOST && process.env.SMTP_USER) {
-    // If Gmail host, use Nodemailer's built-in gmail service / 465 SSL for Render cloud compatibility
-    if (process.env.SMTP_HOST.includes("gmail")) {
-      return nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
-    }
-
+  if (nodemailer && process.env.SMTP_USER && process.env.SMTP_PASS) {
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
+      host: process.env.SMTP_HOST || "smtp.gmail.com",
       port: Number(process.env.SMTP_PORT) || 587,
       secure: process.env.SMTP_SECURE === "true",
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      connectionTimeout: 10000,
     });
   }
-  
+
   // Return test stream if SMTP not configured or nodemailer missing
   return {
     sendMail: async (options) => {

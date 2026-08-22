@@ -573,7 +573,8 @@ function Navbar() {
                           const res = await sendTestReport();
                           setEmailStatusMsg(res.data?.message || "Report sent to email! 📩");
                         } catch (err) {
-                          setEmailStatusMsg("Email send failed ❌ Check credentials");
+                          const errorDetail = err.response?.data?.message || err.message || "Check credentials";
+                          setEmailStatusMsg(`Email send failed ❌ ${errorDetail}`);
                         }
                       }}
                       className="text-[11px] text-accent hover:underline flex items-center gap-1 font-medium bg-accent/10 px-2 py-1 rounded-md"
