@@ -11,17 +11,26 @@ if (dns.setDefaultResultOrder) {
 }
 
 // Create test or SMTP transporter
-const createTransporter = () => {
+const createTransporter = (overridePort, overrideSecure) => {
   if (nodemailer && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    const host = process.env.SMTP_HOST || "smtp.gmail.com";
+    const isGmail = host.includes("gmail");
+    
+    // Default to port 465 (SSL) for Gmail on cloud hosts like Render to avoid 587 STARTTLS timeouts
+    const port = overridePort || Number(process.env.SMTP_PORT) || (isGmail ? 465 : 587);
+    const secure = overrideSecure !== undefined ? overrideSecure : (process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : port === 465);
+
     return nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: process.env.SMTP_SECURE === "true",
+      host,
+      port,
+      secure,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
       connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
       family: 4, // Force IPv4 to prevent ENETUNREACH on Render/cloud servers
     });
   }
@@ -40,8 +49,6 @@ const createTransporter = () => {
 };
 
 const sendProductivityReport = async ({ to, userName, summary, period = "Weekly" }) => {
-  const transporter = createTransporter();
-
   const htmlContent = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0d1512; color: #f4f7f5; padding: 30px; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #16221f;">
       <div style="text-align: center; margin-bottom: 24px;">
@@ -137,13 +144,22 @@ const sendProductivityReport = async ({ to, userName, summary, period = "Weekly"
     console.log("[EMAIL SERVICE] PDF Generation Notice:", err.message);
   }
 
-  return await transporter.sendMail({
+  const mailOptions = {
     from: process.env.SMTP_USER || `"GrowthOS Reports" <reports@growthos.app>`,
     to,
     subject: `🌱 Your GrowthOS ${period} Analytics Report (PDF Attached)`,
     html: htmlContent,
     attachments,
-  });
+  };
+
+  try {
+    const transporter = createTransporter(465, true);
+    return await transporter.sendMail(mailOptions);
+  } catch (primaryErr) {
+    console.warn("[EMAIL SERVICE] Primary Port 465 SSL failed, trying Port 587 STARTTLS fallback:", primaryErr.message);
+    const fallbackTransporter = createTransporter(587, false);
+    return await fallbackTransporter.sendMail(mailOptions);
+  }
 };
 
 module.exports = { sendProductivityReport };
