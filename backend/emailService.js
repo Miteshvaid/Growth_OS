@@ -48,6 +48,41 @@ const createTransporter = (overridePort, overrideSecure) => {
   };
 };
 
+// Resend HTTPS API Helper (bypasses Render SMTP port blocks completely via HTTPS port 443)
+const sendViaResend = async ({ to, subject, html, attachments }) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  const resendFrom = process.env.RESEND_FROM || "GrowthOS Reports <onboarding@resend.dev>";
+
+  const payload = {
+    from: resendFrom,
+    to: Array.isArray(to) ? to : [to],
+    subject,
+    html,
+  };
+
+  if (attachments && attachments.length > 0) {
+    payload.attachments = attachments.map((att) => ({
+      filename: att.filename,
+      content: Buffer.isBuffer(att.content) ? att.content.toString("base64") : att.content,
+    }));
+  }
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || data.error?.message || "Resend API dispatch failed");
+  }
+  return { messageId: data.id };
+};
+
 const sendProductivityReport = async ({ to, userName, summary, period = "Weekly" }) => {
   const htmlContent = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0d1512; color: #f4f7f5; padding: 30px; border-radius: 12px; max-width: 600px; margin: 0 auto; border: 1px solid #16221f;">
@@ -152,6 +187,17 @@ const sendProductivityReport = async ({ to, userName, summary, period = "Weekly"
     attachments,
   };
 
+  // 1. Try Resend HTTPS API if API Key is available (Bypasses Render SMTP port blocks completely)
+  if (process.env.RESEND_API_KEY) {
+    try {
+      console.log("[EMAIL SERVICE] Dispatching email via Resend HTTPS API...");
+      return await sendViaResend({ to, subject: mailOptions.subject, html: htmlContent, attachments });
+    } catch (resendErr) {
+      console.error("[EMAIL SERVICE] Resend API error:", resendErr.message);
+    }
+  }
+
+  // 2. Try Nodemailer SMTP (Port 465 SSL primary, Port 587 STARTTLS fallback)
   try {
     const transporter = createTransporter(465, true);
     return await transporter.sendMail(mailOptions);
